@@ -1,0 +1,1613 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>声轨工作台</title>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101214;
+      --panel: #181c20;
+      --panel-2: #20262b;
+      --line: #303840;
+      --line-soft: #262d33;
+      --text: #eef3f6;
+      --muted: #91a0a8;
+      --soft: #bdc8ce;
+      --teal: #36c2b0;
+      --amber: #f2b544;
+      --coral: #f06f5f;
+      --blue: #5c9df4;
+      --violet: #9a7cf6;
+      --green: #7bc96f;
+      --track-a: rgba(54, 194, 176, .18);
+      --track-b: rgba(242, 181, 68, .18);
+      --track-c: rgba(92, 157, 244, .18);
+      --track-d: rgba(240, 111, 95, .18);
+      --radius: 8px;
+      --shadow: 0 18px 45px rgba(0, 0, 0, .28);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-width: 1024px;
+      min-height: 720px;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 252px minmax(520px, 1fr) 310px;
+      grid-template-rows: 58px minmax(0, 1fr) 84px;
+      height: 100vh;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px) 0 0 / 40px 40px,
+        linear-gradient(0deg, rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 40px 40px,
+        var(--bg);
+    }
+
+    .topbar {
+      grid-column: 1 / 4;
+      display: grid;
+      grid-template-columns: 252px minmax(0, 1fr) 310px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(16, 18, 20, .92);
+      backdrop-filter: blur(12px);
+      z-index: 5;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: #e9f6f3;
+      color: #10231f;
+    }
+
+    .brand-title {
+      line-height: 1.1;
+    }
+
+    .brand-title strong {
+      display: block;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .brand-title span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .session-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      padding: 0 18px;
+    }
+
+    .crumb {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 10px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    .crumb strong {
+      max-width: 42vw;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 16px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn,
+    .mini-btn {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: var(--panel);
+      color: var(--soft);
+      transition: .16s ease;
+    }
+
+    .icon-btn:hover,
+    .mini-btn:hover,
+    .icon-btn.active {
+      border-color: #53616b;
+      background: #232a30;
+      color: var(--text);
+    }
+
+    .mini-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+    }
+
+    .primary-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 34px;
+      padding: 0 12px;
+      border: 1px solid rgba(54, 194, 176, .5);
+      border-radius: 7px;
+      background: #dff7f3;
+      color: #10231f;
+      font-weight: 700;
+    }
+
+    .status-strip {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      padding: 0 18px;
+      border-left: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(123, 201, 111, .12);
+    }
+
+    aside,
+    main,
+    .right-panel {
+      min-height: 0;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      border-right: 1px solid var(--line);
+      background: rgba(24, 28, 32, .94);
+    }
+
+    .search-wrap {
+      padding: 16px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .search {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 38px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #111518;
+      color: var(--muted);
+    }
+
+    .search input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .sidebar-scroll,
+    .right-scroll {
+      min-height: 0;
+      overflow: auto;
+      scrollbar-color: #49535c transparent;
+    }
+
+    .side-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .project-list,
+    .asset-list,
+    .marker-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .project-item,
+    .asset-item,
+    .marker-item {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      min-height: 46px;
+      padding: 8px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--soft);
+      text-align: left;
+    }
+
+    .project-item:hover,
+    .asset-item:hover,
+    .marker-item:hover,
+    .project-item.active {
+      border-color: var(--line);
+      background: #20262b;
+    }
+
+    .tile-icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      background: #111518;
+      color: var(--teal);
+    }
+
+    .tile-copy {
+      min-width: 0;
+    }
+
+    .tile-copy strong,
+    .asset-item strong,
+    .marker-item strong {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tile-copy span,
+    .asset-item span,
+    .marker-item span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-width: 40px;
+      height: 22px;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-rows: 120px minmax(0, 1fr);
+      min-width: 0;
+      background: rgba(16, 18, 20, .82);
+    }
+
+    .overview {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 190px 190px;
+      gap: 1px;
+      border-bottom: 1px solid var(--line);
+      background: var(--line-soft);
+    }
+
+    .overview-block {
+      display: grid;
+      align-content: center;
+      gap: 10px;
+      padding: 18px;
+      background: #15191d;
+      min-width: 0;
+    }
+
+    .overview-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .overview-title h1 {
+      margin: 0;
+      overflow: hidden;
+      font-size: 24px;
+      font-weight: 850;
+      letter-spacing: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .overview-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric {
+      display: grid;
+      gap: 6px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong {
+      font-size: 28px;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .meter {
+      position: relative;
+      width: 100%;
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #262d33;
+    }
+
+    .meter > i {
+      display: block;
+      width: var(--value);
+      height: 100%;
+      border-radius: inherit;
+      background: var(--color);
+    }
+
+    .timeline-shell {
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr);
+      grid-template-rows: 44px minmax(0, 1fr);
+      min-height: 0;
+    }
+
+    .track-header-top,
+    .ruler {
+      border-bottom: 1px solid var(--line);
+      background: #15191d;
+    }
+
+    .track-header-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      border-right: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .ruler {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ruler-marks {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+    }
+
+    .ruler-marks span {
+      position: relative;
+      padding: 14px 0 0 8px;
+      border-left: 1px solid var(--line-soft);
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .track-labels {
+      min-height: 0;
+      overflow: hidden;
+      border-right: 1px solid var(--line);
+      background: #15191d;
+    }
+
+    .track-label {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 28px 28px;
+      align-items: center;
+      gap: 6px;
+      height: 88px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .track-name {
+      min-width: 0;
+    }
+
+    .track-name strong {
+      display: block;
+      overflow: hidden;
+      font-size: 13px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .track-name span {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .track-btn {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #111518;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .track-btn.active {
+      color: #101214;
+      background: var(--amber);
+      border-color: var(--amber);
+    }
+
+    .arrangement {
+      position: relative;
+      min-width: 0;
+      min-height: 0;
+      overflow: auto;
+      background:
+        linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px) 0 0 / 8.333% 100%,
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px) 0 0 / 2.083% 100%,
+        #111518;
+    }
+
+    .tracks {
+      position: relative;
+      min-width: 980px;
+      height: 528px;
+    }
+
+    .track-row {
+      position: relative;
+      height: 88px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .clip {
+      position: absolute;
+      top: 13px;
+      height: 62px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 7px;
+      background: var(--clip-bg);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
+      color: var(--text);
+      text-align: left;
+    }
+
+    .clip.selected {
+      outline: 2px solid var(--teal);
+      outline-offset: 2px;
+    }
+
+    .clip-title {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px 0;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .clip-title span {
+      color: rgba(255,255,255,.72);
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .wave-canvas {
+      position: absolute;
+      left: 6px;
+      right: 6px;
+      bottom: 7px;
+      width: calc(100% - 12px);
+      height: 31px;
+      opacity: .92;
+    }
+
+    .playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 18%;
+      width: 2px;
+      background: #f4fbff;
+      box-shadow: 0 0 0 1px rgba(16, 18, 20, .5), 0 0 24px rgba(54, 194, 176, .34);
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .playhead::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: -7px;
+      width: 12px;
+      height: 12px;
+      transform: translateX(-50%) rotate(45deg);
+      border-radius: 3px;
+      background: #f4fbff;
+    }
+
+    .right-panel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      border-left: 1px solid var(--line);
+      background: rgba(24, 28, 32, .95);
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 12px;
+      border-bottom: 1px solid var(--line-soft);
+      background: #15191d;
+    }
+
+    .tab-btn {
+      height: 32px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tab-btn.active {
+      border-color: var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+    }
+
+    .panel-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .inspect-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      background: var(--teal);
+      box-shadow: 0 0 0 3px rgba(54, 194, 176, .16);
+    }
+
+    .inspect-title strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .inspect-title span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label.field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #111518;
+      color: var(--text);
+      padding: 0 10px;
+      outline: 0;
+    }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--teal);
+    }
+
+    .slider-row {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 42px;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    input[type="range"] {
+      accent-color: var(--teal);
+    }
+
+    .mixer {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      height: 176px;
+    }
+
+    .channel {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      justify-items: center;
+      gap: 8px;
+      min-width: 0;
+      padding: 10px 6px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #15191d;
+    }
+
+    .channel strong {
+      overflow: hidden;
+      width: 100%;
+      text-align: center;
+      color: var(--soft);
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fader {
+      writing-mode: vertical-lr;
+      direction: rtl;
+      width: 24px;
+      min-height: 88px;
+    }
+
+    .level {
+      display: flex;
+      align-items: end;
+      justify-content: center;
+      width: 18px;
+      height: 68px;
+      border-radius: 5px;
+      background: #0d1012;
+      overflow: hidden;
+    }
+
+    .level i {
+      display: block;
+      width: 100%;
+      height: var(--level);
+      background: linear-gradient(#f06f5f, #f2b544 38%, #36c2b0);
+    }
+
+    .ai-queue {
+      display: grid;
+      gap: 8px;
+    }
+
+    .queue-item {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #15191d;
+    }
+
+    .queue-item i {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(92, 157, 244, .15);
+      color: var(--blue);
+      font-style: normal;
+    }
+
+    .queue-item strong {
+      display: block;
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .queue-item span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .transport {
+      grid-column: 1 / 4;
+      display: grid;
+      grid-template-columns: 252px minmax(0, 1fr) 310px;
+      border-top: 1px solid var(--line);
+      background: #15191d;
+      box-shadow: 0 -16px 34px rgba(0, 0, 0, .24);
+      z-index: 5;
+    }
+
+    .time-readout,
+    .mix-readout {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 18px;
+      border-right: 1px solid var(--line);
+    }
+
+    .timecode {
+      color: var(--text);
+      font-size: 24px;
+      font-weight: 850;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .time-readout span,
+    .mix-readout span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .transport-center {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      padding: 0 18px;
+    }
+
+    .transport-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .play-btn {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #eef7f4;
+      color: #10231f;
+      box-shadow: var(--shadow);
+    }
+
+    .scrubber {
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .scrub-line {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      background: #262d33;
+      overflow: hidden;
+    }
+
+    .scrub-fill {
+      width: 18%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--teal);
+    }
+
+    .scrub-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .bpm-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .bpm-control input {
+      width: 64px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #111518;
+      color: var(--text);
+      padding: 0 8px;
+    }
+
+    .mix-readout {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+      justify-content: space-between;
+    }
+
+    .master-meter {
+      display: grid;
+      gap: 6px;
+      width: 104px;
+    }
+
+    .master-meter .bar {
+      height: 7px;
+      border-radius: 999px;
+      background: #262d33;
+      overflow: hidden;
+    }
+
+    .master-meter .bar i {
+      display: block;
+      height: 100%;
+      width: var(--w);
+      border-radius: inherit;
+      background: var(--c);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 1180px) {
+      body {
+        min-width: 900px;
+      }
+
+      .app,
+      .topbar,
+      .transport {
+        grid-template-columns: 220px minmax(470px, 1fr) 280px;
+      }
+
+      .overview {
+        grid-template-columns: minmax(220px, 1fr) 150px 150px;
+      }
+
+      .metric strong {
+        font-size: 23px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        min-width: 0;
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .app {
+        display: block;
+        min-height: 100vh;
+      }
+
+      .topbar,
+      .transport {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .brand,
+      .session-bar,
+      .status-strip,
+      .time-readout,
+      .transport-center,
+      .mix-readout {
+        border-left: 0;
+        border-right: 0;
+      }
+
+      .brand,
+      .session-bar,
+      .status-strip {
+        min-height: 56px;
+      }
+
+      .session-bar,
+      .transport-center {
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 16px;
+      }
+
+      .toolbar {
+        flex-wrap: wrap;
+      }
+
+      .status-strip {
+        justify-content: flex-start;
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .sidebar,
+      .right-panel {
+        border-left: 0;
+        border-right: 0;
+      }
+
+      .sidebar-scroll,
+      .right-scroll {
+        overflow: visible;
+      }
+
+      .workspace {
+        display: block;
+      }
+
+      .overview {
+        grid-template-columns: 1fr;
+      }
+
+      .overview-title {
+        align-items: flex-start;
+      }
+
+      .overview-title h1 {
+        white-space: normal;
+      }
+
+      .timeline-shell {
+        display: grid;
+        grid-template-columns: 122px minmax(0, 1fr);
+        grid-template-rows: 44px 528px;
+        height: 572px;
+      }
+
+      .track-label {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+        padding: 9px;
+      }
+
+      .track-btn {
+        display: none;
+      }
+
+      .tabs {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+      }
+
+      .transport {
+        position: sticky;
+        bottom: 0;
+      }
+
+      .transport-center {
+        grid-template-columns: 1fr;
+      }
+
+      .mix-readout {
+        min-height: 54px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"><i data-lucide="audio-lines"></i></div>
+        <div class="brand-title">
+          <strong>声轨工作台</strong>
+          <span>Soundtrack Studio</span>
+        </div>
+      </div>
+
+      <div class="session-bar">
+        <div class="crumb">
+          <i data-lucide="folder-open" size="16"></i>
+          <strong>纪录片配乐 / 城市晨间版</strong>
+          <span>v3.8</span>
+        </div>
+        <div class="toolbar">
+          <button class="icon-btn" title="撤销"><i data-lucide="undo-2" size="17"></i></button>
+          <button class="icon-btn" title="重做"><i data-lucide="redo-2" size="17"></i></button>
+          <button class="icon-btn active" title="吸附"><i data-lucide="magnet" size="17"></i></button>
+          <button class="icon-btn" title="循环"><i data-lucide="repeat-2" size="17"></i></button>
+          <button class="primary-btn"><i data-lucide="upload-cloud" size="16"></i> 导出母版</button>
+        </div>
+      </div>
+
+      <div class="status-strip">
+        <span class="status-dot"></span>
+        <span>已同步</span>
+        <span>48kHz / 24bit</span>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="search-wrap">
+        <label class="search">
+          <i data-lucide="search" size="16"></i>
+          <input id="assetSearch" type="search" placeholder="搜索素材、标记、项目" />
+        </label>
+      </div>
+
+      <div class="sidebar-scroll">
+        <section class="side-section">
+          <div class="section-head">
+            <span>项目</span>
+            <button class="mini-btn" title="新建项目"><i data-lucide="plus" size="15"></i></button>
+          </div>
+          <div class="project-list">
+            <button class="project-item active">
+              <span class="tile-icon"><i data-lucide="radio" size="16"></i></span>
+              <span class="tile-copy"><strong>城市晨间版</strong><span>12 条轨道</span></span>
+              <span class="tag">03:42</span>
+            </button>
+            <button class="project-item">
+              <span class="tile-icon"><i data-lucide="film" size="16"></i></span>
+              <span class="tile-copy"><strong>品牌短片 B</strong><span>8 条轨道</span></span>
+              <span class="tag">01:18</span>
+            </button>
+            <button class="project-item">
+              <span class="tile-icon"><i data-lucide="mic-2" size="16"></i></span>
+              <span class="tile-copy"><strong>访谈清理</strong><span>5 条轨道</span></span>
+              <span class="tag">29:05</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="side-section">
+          <div class="section-head">
+            <span>素材库</span>
+            <button class="mini-btn" title="导入素材"><i data-lucide="folder-plus" size="15"></i></button>
+          </div>
+          <div id="assetList" class="asset-list">
+            <button class="asset-item" data-name="雨后街道 环境声">
+              <span class="tile-icon"><i data-lucide="cloud-rain" size="16"></i></span>
+              <span><strong>雨后街道</strong><span>ambience / 00:48</span></span>
+              <span class="tag">WAV</span>
+            </button>
+            <button class="asset-item" data-name="低频脉冲 合成器">
+              <span class="tile-icon"><i data-lucide="activity" size="16"></i></span>
+              <span><strong>低频脉冲</strong><span>synth / 00:16</span></span>
+              <span class="tag">AIFF</span>
+            </button>
+            <button class="asset-item" data-name="木质敲击 打击乐">
+              <span class="tile-icon"><i data-lucide="drum" size="16"></i></span>
+              <span><strong>木质敲击</strong><span>percussion / 00:09</span></span>
+              <span class="tag">WAV</span>
+            </button>
+            <button class="asset-item" data-name="女声旁白 人声">
+              <span class="tile-icon"><i data-lucide="mic" size="16"></i></span>
+              <span><strong>女声旁白</strong><span>voice / 02:41</span></span>
+              <span class="tag">FLAC</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="side-section">
+          <div class="section-head">
+            <span>标记</span>
+            <button class="mini-btn" title="添加标记"><i data-lucide="flag" size="15"></i></button>
+          </div>
+          <div class="marker-list">
+            <button class="marker-item">
+              <span class="tile-icon"><i data-lucide="map-pin" size="16"></i></span>
+              <span><strong>主旋律进入</strong><span>00:42.600</span></span>
+            </button>
+            <button class="marker-item">
+              <span class="tile-icon"><i data-lucide="map-pin" size="16"></i></span>
+              <span><strong>旁白留白</strong><span>01:17.240</span></span>
+            </button>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <section class="overview">
+        <div class="overview-block">
+          <div class="overview-title">
+            <h1>城市晨间版</h1>
+            <div class="toolbar">
+              <button class="mini-btn" title="项目设置"><i data-lucide="settings-2" size="15"></i></button>
+              <button class="mini-btn" title="共享协作"><i data-lucide="users" size="15"></i></button>
+            </div>
+          </div>
+          <div class="overview-meta">
+            <span>总长 03:42.180</span>
+            <span>12 轨</span>
+            <span>节拍 92 BPM</span>
+            <span>调式 D minor</span>
+          </div>
+        </div>
+        <div class="overview-block metric">
+          <span>响度</span>
+          <strong id="lufs">-14.2</strong>
+          <div class="meter" style="--color: var(--teal); --value: 72%"><i></i></div>
+        </div>
+        <div class="overview-block metric">
+          <span>动态余量</span>
+          <strong id="headroom">-5.8</strong>
+          <div class="meter" style="--color: var(--amber); --value: 58%"><i></i></div>
+        </div>
+      </section>
+
+      <section class="timeline-shell">
+        <div class="track-header-top">
+          <i data-lucide="list-music" size="16"></i>
+          <span>轨道</span>
+        </div>
+        <div class="ruler">
+          <div class="ruler-marks">
+            <span>00:00</span><span>00:15</span><span>00:30</span><span>00:45</span>
+            <span>01:00</span><span>01:15</span><span>01:30</span><span>01:45</span>
+            <span>02:00</span><span>02:15</span><span>02:30</span><span>02:45</span>
+          </div>
+        </div>
+        <div class="track-labels">
+          <div class="track-label">
+            <div class="track-name"><strong>旁白</strong><span>Vocal chain</span></div>
+            <button class="track-btn" title="静音">M</button>
+            <button class="track-btn" title="独奏">S</button>
+          </div>
+          <div class="track-label">
+            <div class="track-name"><strong>环境</strong><span>Field texture</span></div>
+            <button class="track-btn" title="静音">M</button>
+            <button class="track-btn active" title="独奏">S</button>
+          </div>
+          <div class="track-label">
+            <div class="track-name"><strong>脉冲</strong><span>Low synth</span></div>
+            <button class="track-btn" title="静音">M</button>
+            <button class="track-btn" title="独奏">S</button>
+          </div>
+          <div class="track-label">
+            <div class="track-name"><strong>打击</strong><span>Foley kit</span></div>
+            <button class="track-btn" title="静音">M</button>
+            <button class="track-btn" title="独奏">S</button>
+          </div>
+          <div class="track-label">
+            <div class="track-name"><strong>弦乐</strong><span>Pad layer</span></div>
+            <button class="track-btn" title="静音">M</button>
+            <button class="track-btn" title="独奏">S</button>
+          </div>
+          <div class="track-label">
+            <div class="track-name"><strong>母线</strong><span>Master print</span></div>
+            <button class="track-btn" title="静音">M</button>
+            <button class="track-btn" title="独奏">S</button>
+          </div>
+        </div>
+        <div id="arrangement" class="arrangement">
+          <div class="tracks">
+            <div id="playhead" class="playhead"></div>
+            <div class="track-row">
+              <button class="clip selected" style="left: 6%; width: 32%; --clip-bg: var(--track-c)" data-title="女声旁白" data-start="00:11.200" data-duration="00:41.500" data-color="#5c9df4">
+                <span class="clip-title">女声旁白 <span>00:41</span></span>
+                <canvas class="wave-canvas" data-seed="7"></canvas>
+              </button>
+              <button class="clip" style="left: 45%; width: 21%; --clip-bg: var(--track-c)" data-title="旁白补录" data-start="01:18.000" data-duration="00:27.400" data-color="#5c9df4">
+                <span class="clip-title">旁白补录 <span>00:27</span></span>
+                <canvas class="wave-canvas" data-seed="11"></canvas>
+              </button>
+            </div>
+            <div class="track-row">
+              <button class="clip" style="left: 0%; width: 61%; --clip-bg: var(--track-a)" data-title="雨后街道" data-start="00:00.000" data-duration="01:20.000" data-color="#36c2b0">
+                <span class="clip-title">雨后街道 <span>01:20</span></span>
+                <canvas class="wave-canvas" data-seed="14"></canvas>
+              </button>
+              <button class="clip" style="left: 64%; width: 26%; --clip-bg: var(--track-a)" data-title="车站远景" data-start="01:27.300" data-duration="00:34.000" data-color="#36c2b0">
+                <span class="clip-title">车站远景 <span>00:34</span></span>
+                <canvas class="wave-canvas" data-seed="18"></canvas>
+              </button>
+            </div>
+            <div class="track-row">
+              <button class="clip" style="left: 13%; width: 22%; --clip-bg: var(--track-b)" data-title="低频脉冲 A" data-start="00:24.000" data-duration="00:29.000" data-color="#f2b544">
+                <span class="clip-title">低频脉冲 A <span>00:29</span></span>
+                <canvas class="wave-canvas" data-seed="4"></canvas>
+              </button>
+              <button class="clip" style="left: 39%; width: 35%; --clip-bg: var(--track-b)" data-title="低频脉冲 B" data-start="01:02.000" data-duration="00:46.000" data-color="#f2b544">
+                <span class="clip-title">低频脉冲 B <span>00:46</span></span>
+                <canvas class="wave-canvas" data-seed="22"></canvas>
+              </button>
+            </div>
+            <div class="track-row">
+              <button class="clip" style="left: 25%; width: 9%; --clip-bg: var(--track-d)" data-title="木质敲击 01" data-start="00:37.000" data-duration="00:08.400" data-color="#f06f5f">
+                <span class="clip-title">木质敲击 <span>00:08</span></span>
+                <canvas class="wave-canvas" data-seed="29"></canvas>
+              </button>
+              <button class="clip" style="left: 52%; width: 12%; --clip-bg: var(--track-d)" data-title="木质敲击 02" data-start="01:20.000" data-duration="00:11.800" data-color="#f06f5f">
+                <span class="clip-title">木质敲击 <span>00:11</span></span>
+                <canvas class="wave-canvas" data-seed="30"></canvas>
+              </button>
+            </div>
+            <div class="track-row">
+              <button class="clip" style="left: 30%; width: 42%; --clip-bg: rgba(154,124,246,.18)" data-title="慢弦铺底" data-start="00:49.200" data-duration="00:58.000" data-color="#9a7cf6">
+                <span class="clip-title">慢弦铺底 <span>00:58</span></span>
+                <canvas class="wave-canvas" data-seed="33"></canvas>
+              </button>
+            </div>
+            <div class="track-row">
+              <button class="clip" style="left: 0%; width: 92%; --clip-bg: rgba(123,201,111,.15)" data-title="母版打印" data-start="00:00.000" data-duration="02:45.000" data-color="#7bc96f">
+                <span class="clip-title">母版打印 <span>02:45</span></span>
+                <canvas class="wave-canvas" data-seed="40"></canvas>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="right-panel">
+      <div class="tabs">
+        <button class="tab-btn active" data-panel="inspect">片段</button>
+        <button class="tab-btn" data-panel="mixer">混音</button>
+        <button class="tab-btn" data-panel="queue">处理</button>
+      </div>
+
+      <div class="right-scroll">
+        <section id="inspectPanel" class="panel-section">
+          <div class="inspect-title">
+            <span id="clipSwatch" class="swatch"></span>
+            <span>
+              <strong id="clipName">女声旁白</strong>
+              <span id="clipMeta">00:11.200 / 00:41.500</span>
+            </span>
+          </div>
+          <div class="field-grid">
+            <label class="field">起点 <input id="clipStart" value="00:11.200" /></label>
+            <label class="field">长度 <input id="clipDuration" value="00:41.500" /></label>
+            <label class="field">淡入 <input value="00:01.200" /></label>
+            <label class="field">淡出 <input value="00:02.000" /></label>
+            <label class="field">算法
+              <select>
+                <option>旁白增强</option>
+                <option>降噪清理</option>
+                <option>音乐平衡</option>
+              </select>
+            </label>
+            <label class="field">状态
+              <select>
+                <option>已锁定</option>
+                <option>可编辑</option>
+                <option>待审核</option>
+              </select>
+            </label>
+          </div>
+          <div class="slider-row">
+            <span>增益</span>
+            <input id="gainSlider" type="range" min="-18" max="12" value="2" />
+            <strong id="gainValue">+2dB</strong>
+          </div>
+          <div class="slider-row">
+            <span>声像</span>
+            <input id="panSlider" type="range" min="-50" max="50" value="-6" />
+            <strong id="panValue">L6</strong>
+          </div>
+        </section>
+
+        <section id="mixerPanel" class="panel-section hidden">
+          <div class="section-head">
+            <span>通道</span>
+            <button class="mini-btn" title="重置通道"><i data-lucide="rotate-ccw" size="15"></i></button>
+          </div>
+          <div class="mixer">
+            <div class="channel"><strong>旁白</strong><input class="fader" type="range" min="0" max="100" value="74"><span class="level"><i style="--level: 70%"></i></span></div>
+            <div class="channel"><strong>环境</strong><input class="fader" type="range" min="0" max="100" value="58"><span class="level"><i style="--level: 48%"></i></span></div>
+            <div class="channel"><strong>脉冲</strong><input class="fader" type="range" min="0" max="100" value="66"><span class="level"><i style="--level: 62%"></i></span></div>
+            <div class="channel"><strong>打击</strong><input class="fader" type="range" min="0" max="100" value="49"><span class="level"><i style="--level: 38%"></i></span></div>
+          </div>
+        </section>
+
+        <section id="queuePanel" class="panel-section hidden">
+          <div class="section-head">
+            <span>处理队列</span>
+            <button class="mini-btn" title="运行队列"><i data-lucide="play" size="15"></i></button>
+          </div>
+          <div class="ai-queue">
+            <div class="queue-item">
+              <i><span data-lucide="sparkles" size="15"></span></i>
+              <span><strong>旁白去齿音</strong><span>女声旁白 / 已完成</span></span>
+              <span class="tag">100%</span>
+            </div>
+            <div class="queue-item">
+              <i><span data-lucide="waves" size="15"></span></i>
+              <span><strong>环境声循环点</strong><span>雨后街道 / 进行中</span></span>
+              <span class="tag">68%</span>
+            </div>
+            <div class="queue-item">
+              <i><span data-lucide="sliders-horizontal" size="15"></span></i>
+              <span><strong>响度匹配</strong><span>母线 / 等待中</span></span>
+              <span class="tag">LUFS</span>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <footer class="transport">
+      <div class="time-readout">
+        <div>
+          <div id="timecode" class="timecode">00:32.480</div>
+          <span>帧率 25 fps</span>
+        </div>
+      </div>
+
+      <div class="transport-center">
+        <div class="transport-buttons">
+          <button class="icon-btn" title="跳到开头"><i data-lucide="skip-back" size="18"></i></button>
+          <button class="icon-btn" title="后退"><i data-lucide="rewind" size="18"></i></button>
+          <button id="playButton" class="play-btn" title="播放"><i id="playIcon" data-lucide="play" size="22"></i></button>
+          <button class="icon-btn" title="前进"><i data-lucide="fast-forward" size="18"></i></button>
+          <button class="icon-btn" title="录音"><i data-lucide="circle-dot" size="18"></i></button>
+        </div>
+
+        <div class="scrubber">
+          <div id="scrubLine" class="scrub-line"><div id="scrubFill" class="scrub-fill"></div></div>
+          <div class="scrub-meta"><span>00:00.000</span><span>03:42.180</span></div>
+        </div>
+
+        <label class="bpm-control">
+          BPM
+          <input id="bpmInput" type="number" min="60" max="180" value="92" />
+        </label>
+      </div>
+
+      <div class="mix-readout">
+        <div class="master-meter">
+          <div class="bar"><i style="--w: 78%; --c: var(--teal)"></i></div>
+          <div class="bar"><i style="--w: 63%; --c: var(--amber)"></i></div>
+        </div>
+        <span>Master -3.1dB</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (selector, scope = document) => scope.querySelector(selector);
+    const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
+
+    function drawWave(canvas, seed = 1, color = "rgba(255,255,255,.78)") {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.6;
+      ctx.lineCap = "round";
+      const mid = rect.height / 2;
+      const bars = Math.max(18, Math.floor(rect.width / 5));
+      for (let i = 0; i < bars; i += 1) {
+        const x = 2 + i * ((rect.width - 4) / bars);
+        const noise = Math.sin((i + seed) * 1.7) * .5 + Math.cos((i + seed) * .43) * .5;
+        const envelope = Math.sin((i / bars) * Math.PI);
+        const height = 5 + Math.abs(noise) * envelope * (rect.height - 8);
+        ctx.beginPath();
+        ctx.moveTo(x, mid - height / 2);
+        ctx.lineTo(x, mid + height / 2);
+        ctx.stroke();
+      }
+    }
+
+    function paintWaves() {
+      $$(".wave-canvas").forEach((canvas) => {
+        const seed = Number(canvas.dataset.seed || 1);
+        drawWave(canvas, seed);
+      });
+    }
+
+    function setSelectedClip(clip) {
+      $$(".clip").forEach((item) => item.classList.remove("selected"));
+      clip.classList.add("selected");
+      $("#clipName").textContent = clip.dataset.title;
+      $("#clipMeta").textContent = `${clip.dataset.start} / ${clip.dataset.duration}`;
+      $("#clipStart").value = clip.dataset.start;
+      $("#clipDuration").value = clip.dataset.duration;
+      $("#clipSwatch").style.background = clip.dataset.color;
+      $("#clipSwatch").style.boxShadow = `0 0 0 3px ${clip.dataset.color}22`;
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      const millis = Math.floor((seconds % 1) * 1000);
+      return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
+    }
+
+    let isPlaying = false;
+    let progress = 32.48 / 222.18;
+    let lastTick = 0;
+
+    function setProgress(nextProgress) {
+      progress = Math.max(0, Math.min(.99, nextProgress));
+      const pct = `${progress * 100}%`;
+      $("#playhead").style.left = pct;
+      $("#scrubFill").style.width = pct;
+      $("#timecode").textContent = formatTime(progress * 222.18);
+      const lufs = -14.8 + Math.sin(progress * 9) * .8;
+      const headroom = -5.6 + Math.cos(progress * 7) * .5;
+      $("#lufs").textContent = lufs.toFixed(1);
+      $("#headroom").textContent = headroom.toFixed(1);
+    }
+
+    function animate(ts) {
+      if (!lastTick) lastTick = ts;
+      const delta = (ts - lastTick) / 1000;
+      lastTick = ts;
+      if (isPlaying) {
+        setProgress(progress + delta / 222.18);
+        requestAnimationFrame(animate);
+      }
+    }
+
+    $("#playButton").addEventListener("click", () => {
+      isPlaying = !isPlaying;
+      lastTick = 0;
+      $("#playIcon").setAttribute("data-lucide", isPlaying ? "pause" : "play");
+      $("#playButton").setAttribute("title", isPlaying ? "暂停" : "播放");
+      lucide.createIcons();
+      if (isPlaying) requestAnimationFrame(animate);
+    });
+
+    $("#scrubLine").addEventListener("click", (event) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      setProgress((event.clientX - rect.left) / rect.width);
+    });
+
+    $$(".clip").forEach((clip) => {
+      clip.addEventListener("click", () => setSelectedClip(clip));
+    });
+
+    $$(".track-btn").forEach((button) => {
+      button.addEventListener("click", () => button.classList.toggle("active"));
+    });
+
+    $$(".tab-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        $$(".tab-btn").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        const panel = button.dataset.panel;
+        $("#inspectPanel").classList.toggle("hidden", panel !== "inspect");
+        $("#mixerPanel").classList.toggle("hidden", panel !== "mixer");
+        $("#queuePanel").classList.toggle("hidden", panel !== "queue");
+      });
+    });
+
+    $("#assetSearch").addEventListener("input", (event) => {
+      const term = event.target.value.trim().toLowerCase();
+      $$(".asset-item", $("#assetList")).forEach((item) => {
+        item.style.display = item.dataset.name.toLowerCase().includes(term) ? "" : "none";
+      });
+    });
+
+    $("#gainSlider").addEventListener("input", (event) => {
+      const value = Number(event.target.value);
+      $("#gainValue").textContent = `${value > 0 ? "+" : ""}${value}dB`;
+    });
+
+    $("#panSlider").addEventListener("input", (event) => {
+      const value = Number(event.target.value);
+      $("#panValue").textContent = value === 0 ? "C" : `${value < 0 ? "L" : "R"}${Math.abs(value)}`;
+    });
+
+    $$(".fader").forEach((input) => {
+      input.addEventListener("input", (event) => {
+        const level = event.target.closest(".channel").querySelector(".level i");
+        level.style.setProperty("--level", `${event.target.value}%`);
+      });
+    });
+
+    window.addEventListener("resize", paintWaves);
+
+    paintWaves();
+    setProgress(progress);
+    lucide.createIcons();
+  </script>
+</body>
+</html>

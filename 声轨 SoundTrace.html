@@ -1,0 +1,1653 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>声轨 SoundTrace · 找出任何视频里的每一首歌</title>
+<style>
+:root {
+  --bg: #080808;
+  --panel: #111;
+  --panel2: #161616;
+  --border: #222;
+  --border2: #2a2a2a;
+  --text: #fff;
+  --soft: #aaa;
+  --muted: #555;
+  --green: #AAFF45;
+  --green-dim: rgba(170,255,69,.1);
+  --green-border: rgba(170,255,69,.28);
+  --green-glow: 0 0 32px rgba(170,255,69,.18);
+  --radius: 10px;
+  font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{border:0;cursor:pointer;font:inherit}
+input,select,textarea{font:inherit}
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 48px;height:60px;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,8,8,.92);backdrop-filter:blur(14px);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:800}
+.nav-logo-mark{
+  width:30px;height:30px;border-radius:7px;
+  background:var(--green);display:grid;place-items:center;
+}
+.nav-logo-mark svg{width:16px;height:16px}
+.nav-links{display:flex;align-items:center;gap:32px;font-size:14px;color:var(--soft)}
+.nav-links a:hover{color:var(--text)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.btn-ghost{
+  height:36px;padding:0 16px;border-radius:8px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--soft);font-size:14px;
+}
+.btn-ghost:hover{border-color:#444;color:var(--text)}
+.btn-green{
+  height:36px;padding:0 18px;border-radius:8px;
+  background:var(--green);color:#0a1a00;font-weight:700;font-size:14px;
+}
+.btn-green:hover{background:#beff5a}
+.btn-green-lg{
+  height:52px;padding:0 30px;border-radius:10px;
+  background:var(--green);color:#0a1a00;font-weight:800;font-size:16px;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-green-lg:hover{background:#beff5a}
+.btn-outline-lg{
+  height:52px;padding:0 30px;border-radius:10px;
+  border:1px solid #333;background:transparent;
+  color:var(--text);font-size:16px;font-weight:600;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-outline-lg:hover{border-color:#555;background:#111}
+
+/* ── HERO ── */
+.hero{
+  display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;gap:60px;
+  max-width:1200px;margin:0 auto;
+  padding:100px 48px 80px;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:999px;
+  border:1px solid var(--green-border);background:var(--green-dim);
+  font-size:13px;color:var(--green);font-weight:600;
+  margin-bottom:28px;
+}
+.hero-badge::before{
+  content:"";width:7px;height:7px;border-radius:50%;
+  background:var(--green);animation:pulse 1.8s ease infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{
+  font-size:56px;font-weight:900;line-height:1.08;
+  letter-spacing:-1px;margin-bottom:20px;
+}
+.hero h1 em{font-style:normal;color:var(--green)}
+.hero-sub{font-size:17px;color:var(--soft);line-height:1.7;margin-bottom:36px;max-width:480px}
+.hero-btns{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.hero-note{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.hero-note::before{content:"●";color:var(--green);font-size:9px}
+
+/* Hero product mockup */
+.hero-mockup{
+  background:#0d0d0d;border:1px solid var(--border);border-radius:14px;
+  padding:20px;box-shadow:0 40px 80px rgba(0,0,0,.6);
+}
+.mockup-file{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;font-size:13px;color:var(--soft);
+}
+.mockup-file strong{color:var(--text)}
+.mockup-wave{
+  height:64px;margin-bottom:16px;border-radius:8px;
+  background:linear-gradient(90deg,#0f1a00,#1a3300,#0f1a00);
+  position:relative;overflow:hidden;display:flex;align-items:center;padding:0 8px;gap:1.5px;
+}
+.mockup-wave span{
+  flex:1;border-radius:2px;background:var(--green);opacity:.7;
+  animation:wavebar 1.4s ease-in-out infinite;
+}
+.mockup-wave span:nth-child(2n){animation-delay:.1s}
+.mockup-wave span:nth-child(3n){animation-delay:.2s}
+.mockup-wave span:nth-child(4n){animation-delay:.3s}
+@keyframes wavebar{0%,100%{height:6px}50%{height:38px}}
+.mockup-ruler{
+  display:flex;justify-content:space-between;
+  font-size:10px;color:var(--muted);margin-bottom:12px;
+}
+.mockup-songs{display:grid;gap:6px}
+.mockup-song{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:8px;background:#161616;
+  border:1px solid var(--border);
+}
+.mockup-ts{font-size:13px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums;min-width:68px}
+.mockup-info strong{display:block;font-size:14px}
+.mockup-info span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.mockup-badge{
+  margin-left:auto;font-size:11px;padding:3px 8px;border-radius:999px;
+  background:rgba(170,255,69,.12);color:var(--green);border:1px solid var(--green-border);
+}
+
+/* ── SECTIONS ── */
+section{padding:100px 48px;max-width:1200px;margin:0 auto}
+.section-tag{
+  font-size:13px;color:var(--green);font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:20px;display:block;text-align:center;
+}
+.section-h2{
+  font-size:46px;font-weight:900;line-height:1.1;
+  letter-spacing:-1px;text-align:center;margin-bottom:16px;
+}
+.section-sub{font-size:17px;color:var(--soft);text-align:center;margin-bottom:60px}
+
+/* ── WHY ── */
+.pain-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:40px}
+.pain-card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:28px;
+}
+.pain-card .icon{font-size:28px;margin-bottom:16px}
+.pain-card h3{font-size:18px;font-weight:800;margin-bottom:10px}
+.pain-card p{font-size:14px;color:var(--soft);line-height:1.7}
+
+/* ── HOW ── */
+.how-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px}
+.how-step{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:32px 28px;
+}
+.step-num{
+  width:36px;height:36px;border-radius:9px;
+  background:var(--green);color:#0a1a00;font-weight:900;font-size:16px;
+  display:grid;place-items:center;margin-bottom:20px;
+}
+.how-step h3{font-size:18px;font-weight:800;margin-bottom:10px}
+.how-step p{font-size:14px;color:var(--soft);line-height:1.7}
+
+/* ── USE CASES ── */
+.use-cases{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.use-card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:12px;padding:28px;transition:.2s;
+}
+.use-card:hover{border-color:var(--border2);background:var(--panel2)}
+.use-icon{font-size:26px;margin-bottom:14px}
+.use-card h3{font-size:16px;font-weight:800;margin-bottom:8px}
+.use-card p{font-size:13px;color:var(--soft);line-height:1.65}
+
+/* ── PRICING ── */
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:48px}
+.price-card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:32px;position:relative;
+}
+.price-card.featured{
+  border-color:var(--green);
+  box-shadow:var(--green-glow);
+  background:linear-gradient(160deg,rgba(170,255,69,.06),var(--panel));
+}
+.popular-badge{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:var(--green);color:#0a1a00;font-size:12px;font-weight:800;
+  padding:3px 14px;border-radius:999px;white-space:nowrap;
+}
+.price-name{font-size:15px;color:var(--soft);margin-bottom:12px}
+.price-amount{font-size:44px;font-weight:900;letter-spacing:-1px;margin-bottom:4px}
+.price-amount sup{font-size:22px;vertical-align:top;margin-top:8px}
+.price-amount sub{font-size:15px;color:var(--soft);font-weight:400}
+.price-desc{font-size:13px;color:var(--muted);margin-bottom:24px}
+.price-features{display:grid;gap:10px;margin-bottom:28px}
+.price-feature{display:flex;align-items:flex-start;gap:9px;font-size:14px;color:var(--soft)}
+.price-feature::before{content:"✓";color:var(--green);font-weight:800;flex-shrink:0;margin-top:1px}
+.price-btn{
+  width:100%;height:48px;border-radius:9px;font-size:15px;font-weight:700;transition:.15s;
+}
+.price-btn-outline{
+  border:1px solid var(--border2);background:transparent;color:var(--text);
+}
+.price-btn-outline:hover{border-color:#444;background:#161616}
+.price-btn-fill{background:var(--green);color:#0a1a00}
+.price-btn-fill:hover{background:#beff5a}
+.price-note{font-size:12px;color:var(--muted);text-align:center;margin-top:24px}
+
+/* Pricing calculator */
+.calc{
+  margin-top:48px;background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:36px;
+}
+.calc h3{font-size:20px;font-weight:800;margin-bottom:8px}
+.calc-sub{font-size:14px;color:var(--muted);margin-bottom:32px}
+.calc-sliders{display:grid;gap:24px;margin-bottom:32px}
+.calc-row{display:grid;grid-template-columns:160px 1fr 80px;align-items:center;gap:20px;font-size:14px;color:var(--soft)}
+.calc-row strong{color:var(--text);text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;border-radius:3px;
+  background:#2a2a2a;outline:none;accent-color:var(--green);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--green);cursor:pointer;
+}
+.calc-result{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+  background:var(--border);border-radius:10px;overflow:hidden;
+}
+.calc-stat{background:var(--panel2);padding:20px 24px}
+.calc-stat-label{font-size:12px;color:var(--muted);margin-bottom:8px}
+.calc-stat-value{font-size:28px;font-weight:900;color:var(--green)}
+
+/* ── FAQ ── */
+.faq-list{display:grid;gap:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-top:40px}
+.faq-item{border-bottom:1px solid var(--border)}
+.faq-item:last-child{border-bottom:0}
+.faq-q{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:22px 24px;font-size:16px;font-weight:600;cursor:pointer;
+  background:var(--panel);transition:.15s;
+}
+.faq-q:hover{background:var(--panel2)}
+.faq-icon{font-size:20px;color:var(--green);transition:.2s;flex-shrink:0}
+.faq-item.open .faq-icon{transform:rotate(45deg)}
+.faq-a{
+  display:none;padding:0 24px 22px;
+  font-size:14px;color:var(--soft);line-height:1.8;
+  background:var(--panel);
+}
+.faq-item.open .faq-a{display:block}
+
+/* ── FOOTER CTA ── */
+.footer-cta{
+  text-align:center;padding:120px 48px;
+  border-top:1px solid var(--border);
+  max-width:100%;
+}
+.footer-cta h2{font-size:52px;font-weight:900;letter-spacing:-1px;margin-bottom:12px}
+.footer-cta h2 em{font-style:normal;color:var(--green)}
+.footer-cta p{font-size:17px;color:var(--muted);margin-bottom:36px}
+footer{
+  border-top:1px solid var(--border);padding:32px 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:13px;color:var(--muted);
+}
+.footer-logo{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--text)}
+.footer-links{display:flex;gap:24px}
+.footer-links a:hover{color:var(--text)}
+
+/* ══════════════════════════════════════
+   WORKBENCH
+══════════════════════════════════════ */
+#workbench{
+  display:none;height:100vh;overflow:hidden;
+  display:none;grid-template-rows:56px 1fr;
+}
+#workbench.active{display:grid}
+
+.wb-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;border-bottom:1px solid var(--border);
+  background:rgba(8,8,8,.96);
+}
+.wb-logo{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:800}
+.wb-logo-mark{
+  width:26px;height:26px;border-radius:6px;
+  background:var(--green);display:grid;place-items:center;
+}
+.wb-back{
+  font-size:13px;color:var(--muted);background:transparent;
+  border:1px solid var(--border);border-radius:7px;
+  padding:0 12px;height:30px;transition:.15s;
+}
+.wb-back:hover{color:var(--text);border-color:#333}
+
+.wb-body{
+  display:grid;grid-template-columns:1fr 300px;
+  min-height:0;overflow:hidden;
+}
+
+/* Left */
+.wb-left{
+  display:grid;grid-template-rows:auto auto minmax(0,1fr);
+  min-height:0;overflow:hidden;border-right:1px solid var(--border);
+}
+
+/* File zone */
+.wb-file-zone{
+  margin:16px;padding:20px;
+  border:1.5px dashed var(--border2);border-radius:10px;
+  cursor:pointer;transition:.18s;text-align:center;
+  background:rgba(255,255,255,.01);
+}
+.wb-file-zone:hover,.wb-file-zone.drag{border-color:var(--green);background:var(--green-dim)}
+.wb-file-zone p{font-size:14px;color:var(--soft);margin-top:6px}
+.wb-file-zone p strong{color:var(--text)}
+.wb-file-zone em{font-size:12px;color:var(--muted);font-style:normal;margin-top:4px;display:block}
+.wb-file-loaded{
+  display:none;margin:16px;padding:14px 16px;
+  border:1px solid var(--border);border-radius:10px;
+  align-items:center;gap:12px;
+  background:var(--panel);
+}
+.wb-file-loaded.visible{display:flex}
+.wb-file-icon{
+  width:38px;height:38px;border-radius:8px;
+  background:var(--green-dim);border:1px solid var(--green-border);
+  display:grid;place-items:center;color:var(--green);flex-shrink:0;font-size:18px;
+}
+.wb-file-info{flex:1;min-width:0}
+.wb-file-info strong{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wb-file-info span{font-size:12px;color:var(--muted)}
+.wb-file-clear{
+  width:28px;height:28px;border-radius:6px;background:transparent;
+  border:1px solid var(--border2);color:var(--muted);font-size:16px;
+}
+.wb-file-clear:hover{color:var(--text);border-color:#444}
+
+/* Timeline */
+.wb-timeline{
+  margin:0 16px 0;border:1px solid var(--border);border-radius:10px;
+  overflow:hidden;
+}
+.wb-tl-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--border);
+  font-size:13px;color:var(--muted);background:var(--panel);
+}
+.wb-tl-ruler{
+  position:relative;height:32px;background:#0d0d0d;
+  border-bottom:1px solid var(--border);overflow:hidden;
+}
+.wb-tl-ruler-inner{
+  position:absolute;inset:0;display:flex;align-items:flex-end;padding-bottom:4px;
+}
+.ruler-mark{
+  position:absolute;font-size:9px;color:var(--muted);
+  border-left:1px solid #1e1e1e;padding-left:4px;bottom:4px;
+}
+.wb-tl-bars{
+  height:52px;background:#0a0a0a;position:relative;overflow:hidden;cursor:pointer;
+}
+.tl-bar{
+  position:absolute;top:6px;height:40px;border-radius:5px;
+  background:var(--green);opacity:.75;transition:opacity .15s;
+  display:flex;align-items:center;padding:0 7px;overflow:hidden;
+}
+.tl-bar:hover{opacity:1}
+.tl-bar span{font-size:10px;font-weight:700;color:#0a1a00;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wb-tl-playhead{
+  position:absolute;top:0;bottom:0;width:2px;background:#fff;z-index:5;
+  pointer-events:none;
+}
+.wb-tl-playhead::before{
+  content:"";position:absolute;top:-5px;left:50%;
+  transform:translateX(-50%) rotate(45deg);
+  width:8px;height:8px;border-radius:2px;background:#fff;
+}
+.wb-tl-time{
+  display:flex;justify-content:space-between;
+  padding:4px 10px;font-size:10px;color:var(--muted);
+  font-variant-numeric:tabular-nums;background:#0a0a0a;
+}
+
+/* Transport */
+.wb-transport{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 14px;border-top:1px solid var(--border);background:var(--panel);
+}
+.t-btn{
+  width:32px;height:32px;border-radius:7px;border:1px solid var(--border2);
+  background:transparent;color:var(--soft);display:grid;place-items:center;
+  font-size:15px;transition:.15s;
+}
+.t-btn:hover{color:var(--text);border-color:#333}
+.t-play{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--green);color:#0a1a00;font-size:16px;
+  display:grid;place-items:center;
+}
+.t-play:hover{background:#beff5a}
+.t-scrub{flex:1;height:6px;border-radius:3px;background:#1e1e1e;cursor:pointer;overflow:hidden}
+.t-scrub-fill{height:100%;border-radius:inherit;background:var(--green);width:0}
+.t-time{font-size:13px;color:var(--soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Song list */
+.wb-songs{
+  display:grid;grid-template-rows:auto minmax(0,1fr);
+  min-height:0;
+}
+.wb-songs-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;border-top:1px solid var(--border);
+  font-size:13px;
+}
+.wb-songs-head strong{color:var(--text);font-size:14px}
+.wb-songs-head span{color:var(--muted)}
+.wb-search{
+  height:30px;padding:0 10px;border:1px solid var(--border2);
+  border-radius:7px;background:#111;color:var(--text);font-size:13px;
+  outline:0;width:180px;
+}
+.wb-search:focus{border-color:#333}
+.wb-search::placeholder{color:var(--muted)}
+.songs-scroll{overflow-y:auto;scrollbar-color:#222 transparent}
+.songs-scroll::-webkit-scrollbar{width:4px}
+.songs-scroll::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:2px}
+.song-row{
+  display:grid;grid-template-columns:32px 120px 1fr auto 50px 36px;
+  align-items:center;gap:10px;
+  padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:13px;transition:.12s;cursor:pointer;
+}
+.song-row:hover{background:var(--panel2)}
+.song-row.active{background:rgba(170,255,69,.06)}
+.song-num{color:var(--muted);text-align:center;font-size:12px;font-variant-numeric:tabular-nums}
+.song-ts{color:var(--green);font-weight:700;font-size:12px;font-variant-numeric:tabular-nums}
+.song-title{min-width:0}
+.song-title strong{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.song-title span{display:block;font-size:11px;color:var(--muted);margin-top:2px}
+.song-score{font-size:11px;color:var(--muted);text-align:right}
+.song-dur{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
+.song-play{
+  width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);
+  background:transparent;color:var(--green);display:grid;place-items:center;
+  font-size:12px;transition:.12s;
+}
+.song-play:hover{background:var(--green-dim);border-color:var(--green-border)}
+
+.songs-empty{
+  display:grid;place-items:center;padding:60px 24px;
+  text-align:center;color:var(--muted);font-size:13px;gap:10px;
+}
+.songs-empty big{font-size:32px}
+
+/* Right panel */
+.wb-right{
+  display:grid;grid-template-rows:auto 1fr auto;
+  overflow-y:auto;scrollbar-color:#222 transparent;
+  padding:16px;gap:16px;
+}
+.wb-section{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;
+}
+.wb-section-head{
+  padding:12px 14px;border-bottom:1px solid var(--border);
+  font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;
+}
+.wb-section-head .num{
+  width:20px;height:20px;border-radius:5px;
+  background:var(--green);color:#0a1a00;font-size:11px;font-weight:900;
+  display:grid;place-items:center;flex-shrink:0;
+}
+.wb-import-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+}
+.import-tab{
+  flex:1;height:36px;background:transparent;border:0;border-bottom:2px solid transparent;
+  color:var(--muted);font-size:12px;font-weight:600;transition:.15s;
+}
+.import-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.import-tab:hover{color:var(--text)}
+.import-body{padding:14px}
+.import-input{
+  width:100%;height:36px;border:1px solid var(--border2);border-radius:8px;
+  background:#0d0d0d;color:var(--text);padding:0 12px;outline:0;font-size:13px;
+  margin-bottom:10px;
+}
+.import-input:focus{border-color:#333}
+.import-input::placeholder{color:var(--muted)}
+.wb-btn{
+  width:100%;height:36px;border-radius:8px;font-size:13px;font-weight:700;
+  background:var(--green);color:#0a1a00;margin-bottom:8px;
+}
+.wb-btn:hover{background:#beff5a}
+.wb-btn-sec{
+  width:100%;height:34px;border-radius:8px;font-size:12px;
+  background:transparent;border:1px solid var(--border2);color:var(--muted);
+}
+.wb-btn-sec:hover{color:var(--text);border-color:#333}
+.import-drop{
+  border:1.5px dashed var(--border2);border-radius:8px;padding:24px 14px;
+  text-align:center;cursor:pointer;transition:.18s;
+}
+.import-drop:hover,.import-drop.drag{border-color:var(--green);background:var(--green-dim)}
+.import-drop p{font-size:13px;color:var(--soft);margin-top:6px}
+.import-drop em{font-size:11px;color:var(--muted);font-style:normal}
+.wb-offset{padding:14px;display:grid;gap:10px}
+.offset-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:10px}
+.offset-input{
+  width:64px;height:32px;border:1px solid var(--border2);border-radius:7px;
+  background:#0d0d0d;color:var(--green);padding:0 8px;text-align:center;font-size:14px;font-weight:700;outline:0;
+}
+.offset-note{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* Export */
+.export-btns{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.exp-btn{
+  height:40px;border-radius:8px;font-size:12px;font-weight:700;
+  border:1px solid var(--border2);background:var(--panel2);color:var(--text);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  transition:.15s;cursor:pointer;
+}
+.exp-btn:hover{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+.exp-note{padding:0 12px 12px;font-size:11px;color:var(--muted);line-height:1.6}
+
+/* ── SCAN OVERLAY ── */
+.scan-overlay{
+  position:absolute;inset:0;
+  background:rgba(8,8,8,.88);backdrop-filter:blur(4px);
+  display:grid;place-items:center;z-index:20;border-radius:10px;
+}
+.scan-card{
+  text-align:center;padding:32px 40px;
+}
+.scan-bars{
+  display:flex;align-items:flex-end;justify-content:center;
+  gap:3px;height:48px;margin:16px 0;
+}
+.scan-bars span{
+  width:4px;border-radius:3px;background:var(--green);
+  animation:sb 1s ease-in-out infinite;
+}
+@keyframes sb{0%,100%{height:6px}50%{height:40px}}
+.scan-progress-bar{
+  width:260px;height:5px;border-radius:3px;
+  background:#1e1e1e;overflow:hidden;margin:12px auto 8px;
+}
+.scan-progress-fill{height:100%;border-radius:inherit;background:var(--green);width:0;transition:width .4s ease}
+.scan-msg{font-size:13px;color:var(--muted)}
+.scan-pct{font-size:24px;font-weight:900;color:var(--green);margin-top:4px}
+
+/* Right panel simplified */
+.wb-status{padding:16px;display:grid;gap:10px}
+.status-idle{text-align:center;padding:20px 10px;color:var(--muted);font-size:13px;line-height:1.8}
+.status-done{
+  padding:14px;border-radius:9px;
+  background:rgba(170,255,69,.08);border:1px solid var(--green-border);
+  text-align:center;
+}
+.status-done strong{display:block;font-size:15px;color:var(--green);margin-bottom:4px}
+.status-done span{font-size:12px;color:var(--muted)}
+.link-section{padding:14px;border-top:1px solid var(--border)}
+.link-section-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
+details summary{font-size:12px;color:var(--muted);cursor:pointer;padding:10px 14px;border-top:1px solid var(--border)}
+details summary:hover{color:var(--text)}
+details .adv-body{padding:14px;border-top:1px solid var(--border);display:grid;gap:8px}
+
+/* Utility */
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<!-- Server not running banner (shown only when opened via file://) -->
+<div id="serverBanner" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(8,8,8,.96);flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px;text-align:center">
+  <div style="font-size:48px">⚡</div>
+  <h2 style="font-size:22px;font-weight:800">需要启动本地服务器</h2>
+  <p style="color:#aaa;max-width:480px;line-height:1.7">
+    声轨 SoundTrace 需要后端服务才能识别音频。<br>
+    请在终端运行以下命令，然后访问 <strong style="color:#AAFF45">http://localhost:3000</strong>
+  </p>
+  <div style="background:#161616;border:1px solid #333;border-radius:12px;padding:20px 28px;font-family:monospace;font-size:14px;text-align:left;line-height:2;color:#AAFF45">
+    cd "声轨 SoundTrace 所在目录"<br>
+    cp .env.example .env &nbsp;&nbsp;<span style="color:#555"># 填入 ACRCloud 凭证</span><br>
+    npm install<br>
+    npm start
+  </div>
+  <p style="font-size:12px;color:#555">首次使用需安装 Node.js (nodejs.org) 和 yt-dlp (brew install yt-dlp)</p>
+</div>
+
+<!-- ════════════════════════════════════════
+     LANDING PAGE
+════════════════════════════════════════ -->
+<div id="landing">
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-mark">
+      <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="5" width="2" height="6" rx="1" fill="#0a1a00"/><rect x="6" y="2" width="2" height="12" rx="1" fill="#0a1a00"/><rect x="10" y="4" width="2" height="8" rx="1" fill="#0a1a00"/><rect x="14" y="6" width="2" height="4" rx="1" fill="#0a1a00"/></svg>
+    </div>
+    声轨 SoundTrace
+  </div>
+  <div class="nav-links">
+    <a href="#how">工作原理</a>
+    <a href="#use-cases">适用场景</a>
+    <a href="#pricing">定价</a>
+    <a href="#faq">常见问题</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn-ghost" onclick="showWorkbench()">登录</button>
+    <button class="btn-green" onclick="showWorkbench()">免费试用</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <div class="hero-badge">支持翻唱 · 现场 · 哼唱识别</div>
+    <h1>找出任何视频里的<em>每一首歌</em>。</h1>
+    <p class="hero-sub">上传一段录像或音频，声轨会逐段识别其中出现的所有歌曲——连同歌名、原唱和精确时间点。几小时的素材，几分钟出歌单。</p>
+    <div class="hero-btns">
+      <button class="btn-green-lg" onclick="showWorkbench()">上传你的第一个视频 →</button>
+      <button class="btn-outline-lg" onclick="showWorkbench()">看工作台 →</button>
+    </div>
+    <p class="hero-note">免费额度 60 分钟 · 无需信用卡 · 翻唱/live 也认得出</p>
+  </div>
+  <div>
+    <div class="hero-mockup">
+      <div class="mockup-file">
+        <span>🎬 <strong>演唱会录像_2h.mp4</strong></span>
+        <span style="color:var(--green)">已识别 11 首</span>
+      </div>
+      <div class="mockup-wave" id="heroWave"></div>
+      <div class="mockup-ruler">
+        <span>0:00</span><span>0:30</span><span>1:00</span><span>1:30</span><span>2:00</span>
+      </div>
+      <div class="mockup-songs">
+        <div class="mockup-song"><span class="mockup-ts">00:46:47</span><div class="mockup-info"><strong>蜗牛</strong><span>周杰伦</span></div><span class="mockup-badge">已识别</span></div>
+        <div class="mockup-song"><span class="mockup-ts">00:59:18</span><div class="mockup-info"><strong>夜曲</strong><span>周杰伦</span></div><span class="mockup-badge">已识别</span></div>
+        <div class="mockup-song"><span class="mockup-ts">01:02:34</span><div class="mockup-info"><strong>Bad Romance</strong><span>Lady Gaga</span></div><span class="mockup-badge">已识别</span></div>
+        <div class="mockup-song"><span class="mockup-ts">01:05:30</span><div class="mockup-info"><strong>Baby (Acoustic)</strong><span>Justin Bieber</span></div><span class="mockup-badge">已识别</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WHY -->
+<section style="padding:80px 48px;max-width:1200px;margin:0 auto">
+  <span class="section-tag">为什么需要它</span>
+  <h2 class="section-h2">手动一首首倒带听，<br>是创作者的噩梦</h2>
+  <p class="section-sub">不管你是要标注版权、整理歌单还是切片，靠耳朵和倒带都太慢了。</p>
+  <div class="pain-cards">
+    <div class="pain-card">
+      <div class="icon">🎵</div>
+      <h3>"这段 BGM 叫什么？"</h3>
+      <p>视频快发了才发现不知道背景音乐是谁的，怕侵权又找不到名字。</p>
+    </div>
+    <div class="pain-card">
+      <div class="icon">⏱</div>
+      <h3>"两小时录像里唱了几十首"</h3>
+      <p>演唱会、KTV、live 录像，想做歌单或单曲切片，手动定位每一首要熬一整夜。</p>
+    </div>
+    <div class="pain-card">
+      <div class="icon">🎤</div>
+      <h3>"翻唱和现场版认不出"</h3>
+      <p>普通听歌识曲只认原版录音，自己唱的、现场版、改编版统统识别失败。</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW -->
+<section id="how" style="padding:80px 48px;max-width:1200px;margin:0 auto">
+  <span class="section-tag">工作原理</span>
+  <h2 class="section-h2">三步，拿到带时间点的完整歌单</h2>
+  <div class="how-steps">
+    <div class="how-step">
+      <div class="step-num">1</div>
+      <h3>上传素材</h3>
+      <p>拖入视频或音频，或直接粘贴 YouTube / 抖音 / B站链接。本地文件不上传服务器。</p>
+    </div>
+    <div class="how-step">
+      <div class="step-num">2</div>
+      <h3>遍历扫描</h3>
+      <p>引擎逐段比对一亿+ 曲库，支持翻唱、现场版、哼唱，每 30 秒出一批结果。</p>
+    </div>
+    <div class="how-step">
+      <div class="step-num">3</div>
+      <h3>导出歌单</h3>
+      <p>得到每首歌的歌名、原唱、时间段，一键导出 YouTube 章节 / CSV / ffmpeg 切片。</p>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section id="use-cases" style="padding:80px 48px;max-width:1200px;margin:0 auto">
+  <span class="section-tag">适用场景</span>
+  <h2 class="section-h2">一个能力，很多人都用得上</h2>
+  <div class="use-cases">
+    <div class="use-card"><div class="use-icon">🎬</div><h3>Vlogger / UP主</h3><p>找出视频里用过的 BGM，做版权标注或替换为无版权曲，避免下架限流。</p></div>
+    <div class="use-card"><div class="use-icon">🎧</div><h3>DJ / 现场录音</h3><p>从一整场 set 里扒出完整歌单，连混音、remix、现场版都能定位。</p></div>
+    <div class="use-card"><div class="use-icon">🎙</div><h3>播客 / 电台</h3><p>自动生成「本期歌曲 + 时间点」，放进 show notes，省去人工记录。</p></div>
+    <div class="use-card"><div class="use-icon">✂️</div><h3>剪辑师 / MCN</h3><p>批量给长视频打歌曲时间轴，自动切成单曲短视频分发各平台。</p></div>
+    <div class="use-card"><div class="use-icon">🎤</div><h3>演唱会 / KTV</h3><p>整理现场录像歌单，按歌切片做回顾，翻唱与 live 版照样认。</p></div>
+    <div class="use-card"><div class="use-icon">⚖️</div><h3>版权自查</h3><p>发布前扫一遍，自查有没有用到受版权保护的音乐，附 ISRC 编号。</p></div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" style="padding:80px 48px;max-width:1200px;margin:0 auto">
+  <span class="section-tag">定价</span>
+  <h2 class="section-h2">按分钟计费，长视频也不怕</h2>
+  <p class="section-sub">每月赠送免费额度，超出按分钟扣费。买得越多，单价越低。</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">免费 Free</div>
+      <div class="price-amount">¥<span>0</span></div>
+      <div class="price-desc">尝鲜与轻度使用</div>
+      <div class="price-features">
+        <div class="price-feature">每月 60 分钟识别额度</div>
+        <div class="price-feature">歌名 · 原唱 · 时间点</div>
+        <div class="price-feature">网页内查看与跳转</div>
+        <div class="price-feature">单文件 ≤ 30 分钟</div>
+      </div>
+      <button class="price-btn price-btn-outline" onclick="showWorkbench()">免费开始</button>
+    </div>
+    <div class="price-card featured">
+      <div class="popular-badge">最受欢迎</div>
+      <div class="price-name">创作者 Creator</div>
+      <div class="price-amount">¥<span>39</span><sub>/月</sub></div>
+      <div class="price-desc">每月含 600 分钟，约 5 场录像</div>
+      <div class="price-features">
+        <div class="price-feature">每月 600 分钟额度</div>
+        <div class="price-feature">翻唱 / 现场 / 哼唱识别</div>
+        <div class="price-feature">导出 CSV / 歌单</div>
+        <div class="price-feature">YouTube / 抖音 / B站链接直扫</div>
+        <div class="price-feature">超出 ¥0.08 / 分钟</div>
+      </div>
+      <button class="price-btn price-btn-fill" onclick="showWorkbench()">开始试用</button>
+    </div>
+    <div class="price-card">
+      <div class="price-name">工作室 Studio</div>
+      <div class="price-amount">¥<span>149</span><sub>/月</sub></div>
+      <div class="price-desc">团队、MCN、批量处理</div>
+      <div class="price-features">
+        <div class="price-feature">每月 3000 分钟额度</div>
+        <div class="price-feature">自动切片导出</div>
+        <div class="price-feature">API 接入 &amp; 批量队列</div>
+        <div class="price-feature">优先处理速度</div>
+        <div class="price-feature">超出 ¥0.05 / 分钟</div>
+      </div>
+      <button class="price-btn price-btn-outline">联系我们</button>
+    </div>
+  </div>
+  <p class="price-note" style="margin-top:20px">价格为示例，可随时调整。也可纯按量购买积分（1 积分 = 1 分钟）。</p>
+
+  <!-- Calculator -->
+  <div class="calc">
+    <h3>估算你的用量</h3>
+    <p class="calc-sub">拖动看看每月大概需要多少额度。</p>
+    <div class="calc-sliders">
+      <div class="calc-row">
+        <span>每月处理视频数</span>
+        <input type="range" id="calcCount" min="1" max="50" value="10">
+        <strong id="calcCountVal">10 个</strong>
+      </div>
+      <div class="calc-row">
+        <span>平均每个时长</span>
+        <input type="range" id="calcLen" min="5" max="180" value="60" step="5">
+        <strong id="calcLenVal">60 分钟</strong>
+      </div>
+    </div>
+    <div class="calc-result">
+      <div class="calc-stat">
+        <div class="calc-stat-label">每月所需额度</div>
+        <div class="calc-stat-value" id="calcMinutes">600 分钟</div>
+      </div>
+      <div class="calc-stat">
+        <div class="calc-stat-label">推荐方案</div>
+        <div class="calc-stat-value" id="calcPlan">创作者</div>
+      </div>
+      <div class="calc-stat">
+        <div class="calc-stat-label">预计每月花费</div>
+        <div class="calc-stat-value" id="calcCost">¥39</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" style="padding:80px 48px;max-width:1200px;margin:0 auto">
+  <span class="section-tag">常见问题</span>
+  <h2 class="section-h2">你可能想知道</h2>
+  <div class="faq-list">
+    <div class="faq-item open">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>翻唱、现场版、自己唱的也能识别吗？</span><span class="faq-icon">+</span></div>
+      <div class="faq-a">能。声轨使用翻唱识别引擎，基于旋律比对，不只匹配原版录音，所以现场 live、KTV 翻唱、改编版大多都能认出来。跑调严重或非常小众的歌识别率会下降。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>支持多长的视频？</span><span class="faq-icon">+</span></div>
+      <div class="faq-a">免费账户单文件 30 分钟以内，创作者和工作室账户不限时长，几小时的演唱会录像都可以。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>识别准确吗？会漏歌吗？</span><span class="faq-icon">+</span></div>
+      <div class="faq-a">原版录音识别率 95% 以上，翻唱/现场版约 80%。歌曲在视频里时长不足 15 秒、背景噪音极强、或为极小众独立曲目时可能漏识别。结果页提供人工修正入口。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>我的视频会被保存吗？</span><span class="faq-icon">+</span></div>
+      <div class="faq-a">不会。本地文件工具模式下音频只在你的浏览器内处理，不传服务器。链接扫描模式仅抽取音频指纹片段，识别完成后立即删除。</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)"><span>能直接扫 YouTube / 抖音链接吗？</span><span class="faq-icon">+</span></div>
+      <div class="faq-a">可以（创作者及以上套餐）。粘贴链接，后台自动下载音轨、识别、返回歌单，全程无需你手动下载任何文件。</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER CTA -->
+<div class="footer-cta" style="border-top:1px solid var(--border);padding:120px 48px;text-align:center">
+  <h2 style="font-size:52px;font-weight:900;letter-spacing:-1px;margin-bottom:12px">把素材丢进来，<em style="font-style:normal;color:var(--green)">歌单自己出来。</em></h2>
+  <p style="font-size:17px;color:var(--muted);margin-bottom:36px">免费额度 60 分钟，30 秒上手，不用信用卡。</p>
+  <button class="btn-green-lg" onclick="showWorkbench()">免费试用声轨 →</button>
+</div>
+
+<footer>
+  <div class="footer-logo">
+    <div class="nav-logo-mark" style="width:22px;height:22px;border-radius:5px">
+      <svg viewBox="0 0 16 16" fill="none" style="width:12px;height:12px"><rect x="2" y="5" width="2" height="6" rx="1" fill="#0a1a00"/><rect x="6" y="2" width="2" height="12" rx="1" fill="#0a1a00"/><rect x="10" y="4" width="2" height="8" rx="1" fill="#0a1a00"/><rect x="14" y="6" width="2" height="4" rx="1" fill="#0a1a00"/></svg>
+    </div>
+    声轨 SoundTrace
+  </div>
+  <span>找出任何视频里的每一首歌</span>
+  <div class="footer-links"><a href="#how">原理</a><a href="#pricing">定价</a><a href="#faq">FAQ</a></div>
+</footer>
+
+</div><!-- /landing -->
+
+<!-- ════════════════════════════════════════
+     WORKBENCH
+════════════════════════════════════════ -->
+<div id="workbench">
+
+  <header class="wb-header">
+    <div class="wb-logo">
+      <div class="wb-logo-mark">
+        <svg viewBox="0 0 16 16" fill="none" style="width:13px;height:13px"><rect x="2" y="5" width="2" height="6" rx="1" fill="#0a1a00"/><rect x="6" y="2" width="2" height="12" rx="1" fill="#0a1a00"/><rect x="10" y="4" width="2" height="8" rx="1" fill="#0a1a00"/><rect x="14" y="6" width="2" height="4" rx="1" fill="#0a1a00"/></svg>
+      </div>
+      声轨 工作台
+    </div>
+    <button class="wb-back" onclick="showLanding()">← 返回首页</button>
+  </header>
+
+  <div class="wb-body">
+
+    <!-- LEFT -->
+    <div class="wb-left">
+
+      <!-- File zone -->
+      <div id="wbFileZone" class="wb-file-zone" onclick="document.getElementById('fileInput').click()">
+        <div style="font-size:28px">🎬</div>
+        <p><strong>点击选择</strong> 或拖拉你的原始视频 / 音频文件</p>
+        <em>本地播放，不上传 · MP4 / MOV / MP3 / M4A …</em>
+      </div>
+      <div id="wbFileLoaded" class="wb-file-loaded">
+        <div class="wb-file-icon">▶</div>
+        <div class="wb-file-info">
+          <strong id="wbFileName">—</strong>
+          <span id="wbFileDur">–</span>
+        </div>
+        <button class="wb-file-clear" id="wbFileClear" onclick="clearFile()">✕</button>
+      </div>
+
+      <!-- Timeline -->
+      <div class="wb-timeline">
+        <div class="wb-tl-head">
+          <span>时间轴</span>
+          <span id="tlTotal" style="color:var(--muted)">–</span>
+        </div>
+        <div class="wb-tl-ruler"><div id="rulerEl" class="wb-tl-ruler-inner"></div></div>
+        <div class="wb-tl-bars" id="tlBars" onclick="scrubTimeline(event)">
+          <div class="wb-tl-playhead" id="tlPlayhead" style="left:0%"></div>
+        </div>
+        <div class="wb-tl-time">
+          <span id="tlCurrent">00:00</span>
+          <span id="tlEnd">–</span>
+        </div>
+        <div class="wb-transport">
+          <button class="t-btn" id="tSkipStart" title="跳到开头">⏮</button>
+          <button class="t-btn" id="tRewind" title="后退">⏪</button>
+          <button class="t-play" id="tPlay">▶</button>
+          <button class="t-btn" id="tFF" title="前进">⏩</button>
+          <div class="t-scrub" id="tScrub" onclick="scrubBar(event)"><div class="t-scrub-fill" id="tScrubFill"></div></div>
+          <span class="t-time" id="tTime">00:00 / –</span>
+        </div>
+      </div>
+
+      <!-- Song list -->
+      <div class="wb-songs">
+        <div class="wb-songs-head">
+          <strong>歌单结果 <span id="songCountLabel">共 0 首</span></strong>
+          <input class="wb-search" id="songSearch" placeholder="搜索歌名 / 歌手…" oninput="filterSongs()">
+        </div>
+        <div class="songs-scroll" id="songsScroll">
+          <div class="songs-empty" id="songsEmpty">
+            <big>🎵</big>
+            <span>还没有结果。<br>在右侧导入 ACRCloud 识别结果，或点「用演示数据」先体验。</span>
+          </div>
+          <div id="songsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="wb-right">
+
+      <!-- Status / control -->
+      <div class="wb-section">
+        <div class="wb-section-head" style="border-bottom:0">识别状态</div>
+        <div class="wb-status">
+
+          <!-- idle -->
+          <div id="stateIdle" class="status-idle">
+            上传视频或音频文件<br>识别将自动开始 ↑
+          </div>
+
+          <!-- scanning -->
+          <div id="stateScanning" class="hidden" style="text-align:center;padding:12px 0">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:8px" id="scanStatusMsg">正在分析音频…</div>
+            <div class="scan-bars" id="scanBarsEl"></div>
+            <div class="scan-progress-bar"><div class="scan-progress-fill" id="scanProgressFill"></div></div>
+            <div class="scan-pct" id="scanPct">0%</div>
+            <div style="font-size:12px;color:var(--green);margin-top:6px" id="scanFoundCount"></div>
+          </div>
+
+          <!-- done -->
+          <div id="stateDone" class="status-done hidden">
+            <strong id="doneLabel">✓ 识别完成</strong>
+            <span id="doneDesc">共识别 0 首歌曲</span>
+            <button class="wb-btn-sec" style="width:auto;margin:10px auto 0;padding:0 12px" onclick="reRunScan()">重新识别</button>
+          </div>
+
+        </div>
+
+        <!-- Link input -->
+        <div class="link-section">
+          <div class="link-section-label">或粘贴视频链接识别</div>
+          <input class="import-input" placeholder="YouTube / 抖音 / B站 链接…" id="linkInput" style="margin-bottom:8px">
+          <button class="wb-btn" onclick="startLinkScan()">开始识别</button>
+        </div>
+
+        <!-- Advanced: CSV import -->
+        <details>
+          <summary>高级：导入 ACRCloud CSV</summary>
+          <div class="adv-body">
+            <div class="import-drop" onclick="document.getElementById('csvInput').click()" style="padding:16px;margin:0">
+              <div style="font-size:20px">📊</div>
+              <p style="font-size:12px;color:var(--soft);margin-top:4px"><strong>点击选择</strong> CSV 文件</p>
+            </div>
+            <textarea class="import-input" id="pasteInput" rows="4" style="height:80px;resize:none;padding:8px;font-size:12px" placeholder="或粘贴 ACRCloud JSON…"></textarea>
+            <button class="wb-btn" style="height:32px;font-size:12px" onclick="parsePaste()">导入 JSON</button>
+            <div style="font-size:11px;color:var(--muted)">时间偏移：<input class="offset-input" type="number" id="offsetInput" value="0" min="-999" max="999" oninput="applyOffset()" style="width:48px;height:24px;font-size:12px"> 分钟</div>
+          </div>
+        </details>
+      </div>
+
+      <!-- Export -->
+      <div class="wb-section">
+        <div class="wb-section-head" style="border-bottom:0">导出</div>
+        <div class="export-btns">
+          <button class="exp-btn" onclick="exportYT()">📺 YouTube 章节</button>
+          <button class="exp-btn" onclick="exportMd()">📝 歌单 Markdown</button>
+          <button class="exp-btn" onclick="exportCsv()">📊 CSV 表格</button>
+          <button class="exp-btn" onclick="exportFfmpeg()">✂️ ffmpeg 切片</button>
+        </div>
+        <p class="exp-note">ffmpeg 切片命令可直接在终端运行，把长视频按歌曲切成单曲片段。需本机装好 ffmpeg。</p>
+      </div>
+
+    </div><!-- /wb-right -->
+  </div><!-- /wb-body -->
+</div><!-- /workbench -->
+
+<audio id="audioEl" style="display:none" preload="auto"></audio>
+<input id="fileInput" type="file" accept="audio/*,video/*" style="display:none">
+<input id="csvInput" type="file" accept=".csv,.json,.txt" style="display:none">
+
+<script>
+// ─── SERVER CHECK ─────────────────────────────────────────────────────────────
+if (location.protocol === 'file:') {
+  document.getElementById('serverBanner').style.display = 'flex';
+}
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let songs = [];
+let filteredSongs = [];
+let offsetMin = 0;
+let hasAudio = false;
+let playing = false;
+let duration = 0;
+let progress = 0;
+let rafId = null;
+let lastTick = 0;
+let currentFile = null;
+const audio = document.getElementById("audioEl");
+
+// ─── PAGE NAV ─────────────────────────────────────────────────────────────────
+function showWorkbench(demo) {
+  document.getElementById("landing").style.display = "none";
+  document.getElementById("workbench").classList.add("active");
+  initHeroWave();
+}
+function showLanding() {
+  document.getElementById("workbench").classList.remove("active");
+  document.getElementById("landing").style.display = "";
+  audio.pause(); playing = false; updatePlayBtn();
+}
+
+// ─── HERO WAVE ────────────────────────────────────────────────────────────────
+function initHeroWave() {
+  const el = document.getElementById("heroWave");
+  if (!el || el.children.length) return;
+  for (let i = 0; i < 48; i++) {
+    const s = document.createElement("span");
+    s.style.animationDelay = (Math.random() * 1.4) + "s";
+    el.appendChild(s);
+  }
+}
+document.addEventListener("DOMContentLoaded", initHeroWave);
+
+// ─── FAQ ──────────────────────────────────────────────────────────────────────
+function toggleFaq(el) {
+  el.parentElement.classList.toggle("open");
+}
+
+// ─── PRICING CALC ─────────────────────────────────────────────────────────────
+function updateCalc() {
+  const count = +document.getElementById("calcCount").value;
+  const len   = +document.getElementById("calcLen").value;
+  const mins  = count * len;
+  document.getElementById("calcCountVal").textContent = count + " 个";
+  document.getElementById("calcLenVal").textContent   = len + " 分钟";
+  document.getElementById("calcMinutes").textContent  = mins + " 分钟";
+  let plan, cost;
+  if (mins <= 60)   { plan = "免费"; cost = "¥0"; }
+  else if (mins <= 600)  { plan = "创作者"; cost = "¥39"; }
+  else if (mins <= 3000) { plan = "工作室"; cost = "¥149"; }
+  else { plan = "工作室+"; cost = "¥149+" }
+  document.getElementById("calcPlan").textContent = plan;
+  document.getElementById("calcCost").textContent = cost;
+}
+document.getElementById("calcCount").addEventListener("input", updateCalc);
+document.getElementById("calcLen").addEventListener("input", updateCalc);
+
+// ─── IMPORT TABS ──────────────────────────────────────────────────────────────
+document.querySelectorAll(".import-tab").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".import-tab").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    ["tabLink","tabUpload","tabPaste","tabCsv"].forEach(id => document.getElementById(id).classList.add("hidden"));
+    document.getElementById("tab" + btn.dataset.tab.charAt(0).toUpperCase() + btn.dataset.tab.slice(1)).classList.remove("hidden");
+  });
+});
+
+// ─── FILE HANDLING ────────────────────────────────────────────────────────────
+function fmt(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  if (h > 0) return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
+function fmtMs(ms) { return fmt(ms / 1000); }
+
+function loadFile(file) {
+  currentFile = file;
+  const url = URL.createObjectURL(file);
+  audio.src = url;
+  audio.load();
+  audio.addEventListener("loadedmetadata", () => {
+    hasAudio = true;
+    duration = audio.duration;
+    document.getElementById("wbFileName").textContent = file.name;
+    document.getElementById("wbFileDur").textContent = fmt(duration);
+    document.getElementById("wbFileZone").style.display = "none";
+    document.getElementById("wbFileLoaded").classList.add("visible");
+    document.getElementById("tlTotal").textContent = fmt(duration);
+    document.getElementById("tlEnd").textContent = fmt(duration);
+    document.getElementById("tTime").textContent = "00:00 / " + fmt(duration);
+    renderRuler();
+    startServerScan(file);
+  }, {once:true});
+}
+
+// ─── SERVER SCAN (SSE stream from /api/scan) ─────────────────────────────────
+function initScanBars() {
+  const el = document.getElementById("scanBarsEl");
+  if (el.children.length) return;
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement("span");
+    s.style.animationDelay = (i * 0.1) + "s";
+    el.appendChild(s);
+  }
+}
+
+async function startServerScan(file) {
+  initScanBars();
+  document.getElementById("stateIdle").classList.add("hidden");
+  document.getElementById("stateDone").classList.add("hidden");
+  document.getElementById("stateScanning").classList.remove("hidden");
+  songs = []; renderSongs(); renderTimeline();
+
+  const fill    = document.getElementById("scanProgressFill");
+  const pctEl   = document.getElementById("scanPct");
+  const msgEl   = document.getElementById("scanStatusMsg");
+  const foundEl = document.getElementById("scanFoundCount");
+
+  fill.style.width    = "2%";
+  pctEl.textContent   = "0%";
+  msgEl.textContent   = `上传中… (${(file.size/1024/1024).toFixed(0)} MB)`;
+  foundEl.textContent = "";
+
+  let found = 0;
+
+  try {
+    const form = new FormData();
+    form.append("file", file);
+
+    const resp = await fetch("/api/scan", { method: "POST", body: form });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: resp.statusText }));
+      throw new Error(err.error || resp.statusText);
+    }
+    if (resp.status === 0 || !resp.ok) throw new Error('无法连接服务器，请先运行 npm start');
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let   buf     = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();  // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        let ev;
+        try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+
+        switch (ev.type) {
+          case "status":
+            msgEl.textContent = ev.msg;
+            break;
+
+          case "meta":
+            if (!duration && ev.duration) {
+              duration = ev.duration;
+              document.getElementById("tlTotal").textContent = fmt(duration);
+              document.getElementById("tlEnd").textContent   = fmt(duration);
+              document.getElementById("tTime").textContent   = "00:00 / " + fmt(duration);
+              renderRuler();
+            }
+            msgEl.textContent = ev.msg;
+            break;
+
+          case "progress":
+            fill.style.width  = ev.pct + "%";
+            pctEl.textContent = ev.pct + "%";
+            msgEl.textContent = ev.msg;
+            break;
+
+          case "song":
+            found++;
+            songs.push({
+              start:  ev.start,
+              end:    ev.end,
+              title:  ev.title,
+              artist: ev.artist,
+              album:  ev.album  || "",
+              score:  ev.score  || 0,
+              isrc:   ev.isrc   || "—",
+              label:  ev.label  || "",
+            });
+            foundEl.textContent = `已找到 ${found} 首：${ev.title}`;
+            renderSongs();
+            renderTimeline();
+            break;
+
+          case "warn":
+            console.warn("Server warn:", ev.msg);
+            break;
+
+          case "error":
+            throw new Error(ev.msg);
+
+          case "done":
+            fill.style.width  = "100%";
+            pctEl.textContent = "100%";
+            break;
+        }
+      }
+    }
+
+    // Final sort and render
+    songs.sort((a, b) => a.start - b.start);
+    document.getElementById("stateScanning").classList.add("hidden");
+    document.getElementById("stateDone").classList.remove("hidden");
+    document.getElementById("doneLabel").textContent = found > 0 ? "✓ 识别完成" : "识别完成（未找到歌曲）";
+    document.getElementById("doneDesc").textContent  = found > 0
+      ? `共识别 ${found} 首歌曲`
+      : "未识别到已知歌曲。请确认文件含有音乐内容。";
+    renderSongs();
+    renderTimeline();
+
+  } catch (e) {
+    document.getElementById("stateScanning").classList.add("hidden");
+    document.getElementById("stateDone").classList.remove("hidden");
+    document.getElementById("doneLabel").textContent = "⚠ 识别失败";
+    const isNetErr = e.message.includes("fetch") || e.message.includes("network") || e.message.includes("connect");
+    document.getElementById("doneDesc").textContent  = isNetErr
+      ? "无法连接服务器 — 请先在终端运行 npm start，再访问 http://localhost:3000"
+      : e.message;
+    console.error("Scan error:", e);
+  }
+}
+
+function reRunScan() {
+  if (currentFile) startServerScan(currentFile);
+}
+
+function clearFile() {
+  audio.pause(); audio.removeAttribute("src");
+  hasAudio = false; playing = false; progress = 0; currentFile = null;
+  updatePlayBtn(); syncUI();
+  document.getElementById("wbFileZone").style.display = "";
+  document.getElementById("wbFileLoaded").classList.remove("visible");
+}
+
+document.getElementById("fileInput").addEventListener("change", e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+// Drag into file zone
+const wbZone = document.getElementById("wbFileZone");
+wbZone.addEventListener("dragover", e => { e.preventDefault(); wbZone.classList.add("drag"); });
+wbZone.addEventListener("dragleave", () => wbZone.classList.remove("drag"));
+wbZone.addEventListener("drop", e => {
+  e.preventDefault(); wbZone.classList.remove("drag");
+  const f = e.dataTransfer.files[0]; if (f) loadFile(f);
+});
+
+// ─── DEMO / IMPORT ────────────────────────────────────────────────────────────
+async function startLinkScan() {
+  const url = document.getElementById("linkInput").value.trim();
+  if (!url) return;
+
+  // Show workbench scan state
+  initScanBars();
+  document.getElementById("stateIdle").classList.add("hidden");
+  document.getElementById("stateDone").classList.add("hidden");
+  document.getElementById("stateScanning").classList.remove("hidden");
+  songs = []; renderSongs(); renderTimeline();
+
+  const fill    = document.getElementById("scanProgressFill");
+  const pctEl   = document.getElementById("scanPct");
+  const msgEl   = document.getElementById("scanStatusMsg");
+  const foundEl = document.getElementById("scanFoundCount");
+  fill.style.width  = "2%";
+  pctEl.textContent = "0%";
+  msgEl.textContent = "连接服务器…";
+  foundEl.textContent = "";
+
+  let found = 0;
+
+  try {
+    const resp = await fetch("/api/scan-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: resp.statusText }));
+      throw new Error(err.error || resp.statusText);
+    }
+    if (resp.status === 0 || !resp.ok) throw new Error('无法连接服务器，请先运行 npm start');
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let   buf     = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        let ev;
+        try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+
+        switch (ev.type) {
+          case "status": msgEl.textContent = ev.msg; break;
+          case "meta":
+            if (!duration && ev.duration) {
+              duration = ev.duration;
+              document.getElementById("tlTotal").textContent = fmt(duration);
+              document.getElementById("tlEnd").textContent   = fmt(duration);
+              document.getElementById("tTime").textContent   = "00:00 / " + fmt(duration);
+              renderRuler();
+            }
+            msgEl.textContent = ev.msg;
+            break;
+          case "progress":
+            fill.style.width  = ev.pct + "%";
+            pctEl.textContent = ev.pct + "%";
+            msgEl.textContent = ev.msg;
+            break;
+          case "song":
+            found++;
+            songs.push({ start: ev.start, end: ev.end, title: ev.title, artist: ev.artist,
+              album: ev.album || "", score: ev.score || 0, isrc: ev.isrc || "—", label: ev.label || "" });
+            foundEl.textContent = `已找到 ${found} 首：${ev.title}`;
+            songs.sort((a, b) => a.start - b.start);
+            renderSongs(); renderTimeline();
+            break;
+          case "warn":  console.warn("warn:", ev.msg); break;
+          case "error": throw new Error(ev.msg);
+          case "done":
+            fill.style.width = "100%"; pctEl.textContent = "100%"; break;
+        }
+      }
+    }
+
+    document.getElementById("stateScanning").classList.add("hidden");
+    document.getElementById("stateDone").classList.remove("hidden");
+    document.getElementById("doneLabel").textContent = found > 0 ? "✓ 识别完成" : "识别完成（未找到歌曲）";
+    document.getElementById("doneDesc").textContent  = found > 0 ? `共识别 ${found} 首歌曲` : "未识别到已知歌曲。";
+    renderSongs(); renderTimeline();
+
+  } catch (e) {
+    document.getElementById("stateScanning").classList.add("hidden");
+    document.getElementById("stateDone").classList.remove("hidden");
+    document.getElementById("doneLabel").textContent = "⚠ 识别失败";
+    const isNetErr = e.message.includes("fetch") || e.message.includes("network") || e.message.includes("connect");
+    document.getElementById("doneDesc").textContent  = isNetErr
+      ? "无法连接服务器 — 请先在终端运行 npm start，再访问 http://localhost:3000"
+      : e.message;
+  }
+}
+
+function parsePaste() {
+  const raw = document.getElementById("pasteInput").value.trim();
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    const music = data?.metadata?.music || data?.music || [];
+    songs = music.map(m => ({
+      start: (m.start_position_ms || 0) / 1000,
+      end:   (m.end_position_ms || 0) / 1000,
+      title:  m.title || "未知歌曲",
+      artist: (m.artists || []).map(a => a.name).join(", ") || "未知",
+      score:  m.score || 0,
+      isrc:   m.isrc || "—",
+    }));
+    renderSongs(); renderTimeline();
+  } catch(e) {
+    alert("JSON 解析失败，请检查格式");
+  }
+}
+
+// CSV import
+document.getElementById("csvInput").addEventListener("change", e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => parseCsv(ev.target.result);
+  r.readAsText(f);
+});
+
+function parseCsv(text) {
+  const lines = text.trim().split("\n");
+  const header = lines[0].toLowerCase().split(",").map(h => h.trim().replace(/"/g,""));
+  const idx = k => header.findIndex(h => h.includes(k));
+  const iStart = idx("start");
+  const iEnd   = idx("end");
+  const iTitle = idx("title");
+  const iArtist= idx("artist");
+  const iScore = idx("score");
+  const iIsrc  = idx("isrc");
+  songs = lines.slice(1).filter(l => l.trim()).map(line => {
+    const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g,""));
+    const parse = i => i >= 0 ? cols[i] : "";
+    // start/end can be in ms or seconds – detect
+    let s = parseFloat(parse(iStart)) || 0;
+    let e = parseFloat(parse(iEnd))   || 0;
+    if (s > 3600 * 2) { s /= 1000; e /= 1000; } // ms → s
+    return { start: s, end: e, title: parse(iTitle) || "未知歌曲", artist: parse(iArtist) || "未知", score: parseInt(parse(iScore)) || 0, isrc: parse(iIsrc) || "—" };
+  }).filter(s => s.end > s.start);
+  renderSongs(); renderTimeline();
+}
+
+// ─── OFFSET ───────────────────────────────────────────────────────────────────
+function applyOffset(skipRender) {
+  const newOffset = parseFloat(document.getElementById("offsetInput").value) || 0;
+  const delta = (newOffset - offsetMin) * 60;
+  offsetMin = newOffset;
+  songs = songs.map(s => ({ ...s, start: Math.max(0, s.start + delta), end: s.start + delta + (s.end - s.start) }));
+  if (!skipRender) { renderSongs(); renderTimeline(); }
+}
+
+// ─── TIMELINE ─────────────────────────────────────────────────────────────────
+function renderRuler() {
+  const el = document.getElementById("rulerEl");
+  el.innerHTML = "";
+  if (!duration) return;
+  const count = 8;
+  for (let i = 0; i <= count; i++) {
+    const m = document.createElement("span");
+    m.className = "ruler-mark";
+    m.style.left = (i / count * 100) + "%";
+    m.textContent = fmt(i / count * duration);
+    el.appendChild(m);
+  }
+}
+
+function renderTimeline() {
+  const bars = document.getElementById("tlBars");
+  bars.querySelectorAll(".tl-bar").forEach(b => b.remove());
+  if (!songs.length) return;
+  const dur = duration || (songs.at(-1)?.end + 10) || 300;
+  const COLORS = ["#AAFF45","#45C8FF","#FF9F45","#FF4590","#9F45FF","#45FFB4"];
+  songs.forEach((s, i) => {
+    const left = (s.start / dur) * 100;
+    const width = Math.max(0.5, ((s.end - s.start) / dur) * 100);
+    const bar = document.createElement("div");
+    bar.className = "tl-bar";
+    bar.dataset.idx = i;
+    bar.style.left = left + "%";
+    bar.style.width = width + "%";
+    bar.style.background = COLORS[i % COLORS.length] + "bb";
+    bar.innerHTML = `<span>${s.title}</span>`;
+    bar.onclick = (e) => { e.stopPropagation(); seekToSong(i); };
+    bars.appendChild(bar);
+  });
+}
+
+function scrubTimeline(e) {
+  if (!duration) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  setProgress((e.clientX - r.left) / r.width);
+}
+
+// ─── SONGS ────────────────────────────────────────────────────────────────────
+function renderSongs() {
+  filteredSongs = [...songs];
+  document.getElementById("songCountLabel").textContent = "共 " + songs.length + " 首";
+  renderSongList();
+}
+
+function filterSongs() {
+  const q = document.getElementById("songSearch").value.trim().toLowerCase();
+  filteredSongs = q ? songs.filter(s => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q)) : [...songs];
+  renderSongList();
+}
+
+function renderSongList() {
+  const list = document.getElementById("songsList");
+  const empty = document.getElementById("songsEmpty");
+  if (!filteredSongs.length) {
+    empty.style.display = "";
+    list.innerHTML = "";
+    return;
+  }
+  empty.style.display = "none";
+  list.innerHTML = filteredSongs.map((s, i) => {
+    const dur = s.end - s.start;
+    return `<div class="song-row" data-idx="${i}" onclick="seekToSong(${songs.indexOf(s)})">
+      <span class="song-num">${songs.indexOf(s)+1}</span>
+      <span class="song-ts">${fmt(s.start)} – ${fmt(s.end)}</span>
+      <span class="song-title"><strong>${s.title}</strong><span>${s.artist}</span></span>
+      <span class="song-score">${s.score}</span>
+      <span class="song-dur">${fmt(dur)}</span>
+      <button class="song-play" onclick="event.stopPropagation();seekToSong(${songs.indexOf(s)});playAudio()" title="跳转播放">▶</button>
+    </div>`;
+  }).join("");
+}
+
+function seekToSong(idx) {
+  const s = songs[idx];
+  if (!s || !duration) return;
+  setProgress(s.start / duration);
+  document.querySelectorAll(".song-row").forEach(r => r.classList.remove("active"));
+  const rows = document.querySelectorAll(".song-row");
+  const fi = filteredSongs.indexOf(s);
+  if (rows[fi]) rows[fi].classList.add("active");
+}
+
+// ─── PLAYBACK ─────────────────────────────────────────────────────────────────
+audio.addEventListener("timeupdate", () => {
+  if (!hasAudio || !duration) return;
+  progress = audio.currentTime / duration;
+  syncUI();
+});
+audio.addEventListener("ended", () => { playing = false; updatePlayBtn(); });
+
+function setProgress(p) {
+  progress = Math.max(0, Math.min(0.9999, p));
+  if (hasAudio) audio.currentTime = progress * duration;
+  syncUI();
+}
+
+function syncUI() {
+  const pct = (progress * 100) + "%";
+  document.getElementById("tlPlayhead").style.left = pct;
+  document.getElementById("tScrubFill").style.width = pct;
+  const t = progress * duration;
+  document.getElementById("tlCurrent").textContent = fmt(t);
+  document.getElementById("tTime").textContent = fmt(t) + " / " + (duration ? fmt(duration) : "–");
+  // Highlight current song
+  const cur = songs.findIndex(s => t >= s.start && t < s.end);
+  document.querySelectorAll(".song-row").forEach((r, i) => r.classList.toggle("active", i === cur));
+}
+
+function updatePlayBtn() {
+  document.getElementById("tPlay").textContent = playing ? "⏸" : "▶";
+}
+
+function playAudio() {
+  if (!hasAudio) return;
+  if (audio.paused) { audio.play(); playing = true; }
+  updatePlayBtn();
+}
+
+// Fallback RAF for non-audio mode
+function tick(ts) {
+  if (!lastTick) lastTick = ts;
+  const delta = (ts - lastTick) / 1000;
+  lastTick = ts;
+  if (playing && !hasAudio && duration) {
+    const next = progress + delta / duration;
+    if (next >= 1) { playing = false; updatePlayBtn(); setProgress(0); return; }
+    progress = next;
+    syncUI();
+    rafId = requestAnimationFrame(tick);
+  }
+}
+
+document.getElementById("tPlay").addEventListener("click", () => {
+  if (!duration) return;
+  if (hasAudio) {
+    if (audio.paused) { audio.play(); playing = true; }
+    else { audio.pause(); playing = false; }
+  } else {
+    playing = !playing;
+    lastTick = 0;
+    if (playing) rafId = requestAnimationFrame(tick);
+  }
+  updatePlayBtn();
+});
+document.getElementById("tSkipStart").addEventListener("click", () => { setProgress(0); });
+document.getElementById("tRewind").addEventListener("click", () => { if (duration) setProgress(Math.max(0, progress - 10/duration)); });
+document.getElementById("tFF").addEventListener("click", () => { if (duration) setProgress(Math.min(0.9999, progress + 10/duration)); });
+document.getElementById("tScrub").addEventListener("click", e => {
+  if (!duration) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  setProgress((e.clientX - r.left) / r.width);
+});
+
+// ─── EXPORT ───────────────────────────────────────────────────────────────────
+function download(name, content) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content], {type:"text/plain;charset=utf-8"}));
+  a.download = name; a.click();
+}
+
+function exportYT() {
+  if (!songs.length) return alert("请先导入歌曲");
+  const lines = songs.map(s => `${fmt(s.start)} ${s.title} - ${s.artist}`);
+  download("声轨_YouTube章节.txt", lines.join("\n"));
+}
+
+function exportMd() {
+  if (!songs.length) return alert("请先导入歌曲");
+  let md = "# 声轨 SoundTrace 歌单\n\n";
+  md += "| # | 时间 | 歌曲 | 艺人 | 时长 | 置信度 |\n";
+  md += "|---|------|------|------|------|--------|\n";
+  songs.forEach((s, i) => {
+    md += `| ${i+1} | ${fmt(s.start)} | ${s.title} | ${s.artist} | ${fmt(s.end-s.start)} | ${s.score}% |\n`;
+  });
+  download("声轨_歌单.md", md);
+}
+
+function exportCsv() {
+  if (!songs.length) return alert("请先导入歌曲");
+  const rows = [["#","开始时间","结束时间","歌名","艺人","时长(秒)","置信度","ISRC"]];
+  songs.forEach((s, i) => rows.push([i+1, fmt(s.start), fmt(s.end), s.title, s.artist, Math.round(s.end-s.start), s.score, s.isrc]));
+  download("声轨_歌单.csv", rows.map(r => r.join(",")).join("\n"));
+}
+
+function exportFfmpeg() {
+  if (!songs.length) return alert("请先导入歌曲");
+  const fname = document.getElementById("wbFileName").textContent || "input.mp4";
+  const lines = songs.map((s, i) => {
+    const safeTitle = (s.title + "_" + s.artist).replace(/[^一-龥\w]/g, "_");
+    return `ffmpeg -i "${fname}" -ss ${fmt(s.start)} -to ${fmt(s.end)} -c copy "${String(i+1).padStart(2,"0")}_${safeTitle}.mp4"`;
+  });
+  download("声轨_ffmpeg切片.sh", "#!/bin/bash\n# 声轨 SoundTrace 生成的切片命令\n\n" + lines.join("\n"));
+}
+
+// ─── IMPORT DROP ──────────────────────────────────────────────────────────────
+const importDrop = document.getElementById("importDrop");
+if (importDrop) {
+  importDrop.addEventListener("dragover", e => { e.preventDefault(); importDrop.classList.add("drag"); });
+  importDrop.addEventListener("dragleave", () => importDrop.classList.remove("drag"));
+  importDrop.addEventListener("drop", e => {
+    e.preventDefault(); importDrop.classList.remove("drag");
+    const f = e.dataTransfer.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => parseCsv(ev.target.result);
+    r.readAsText(f);
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+updateCalc();
+renderSongs();
+
+// Handle hash
+if (location.hash === "#workbench") showWorkbench();
+</script>
+</body>
+</html>

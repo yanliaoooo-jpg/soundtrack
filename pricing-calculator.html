@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声轨工作台 · 定价计算器</title>
+<style>
+  :root {
+    --bg: #0e0e11;
+    --surface: #18181c;
+    --surface2: #222228;
+    --border: #2e2e38;
+    --accent: #7c6af7;
+    --accent2: #4fc3a1;
+    --warn: #f59e0b;
+    --text: #e8e8f0;
+    --muted: #8888a0;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    min-height: 100vh;
+    padding: 32px 20px;
+  }
+  h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+  .subtitle { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 960px;
+  }
+  @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+  .card h2 {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .row:last-child { margin-bottom: 0; }
+  .label { font-size: 14px; }
+  .label small { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .val {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    min-width: 64px;
+    text-align: right;
+  }
+
+  .slider-wrap { margin-top: 6px; }
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid #fff2;
+    box-shadow: 0 0 0 3px #7c6af720;
+  }
+  .slider-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* cost breakdown */
+  .breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .cost-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .cost-item .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .cost-item .name { flex: 1; color: var(--muted); }
+  .cost-item .amt { font-weight: 600; font-size: 13px; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* big number */
+  .big {
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+  .big .currency { font-size: 18px; font-weight: 500; color: var(--muted); margin-right: 2px; }
+  .big-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  /* result grid */
+  .res-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .res-box {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .res-box .rl { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+  .res-box .rv { font-size: 20px; font-weight: 700; }
+  .res-box .rv.green { color: var(--accent2); }
+  .res-box .rv.yellow { color: var(--warn); }
+  .res-box .rv.red { color: var(--red); }
+
+  /* tier table */
+  .tier-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+  .tier-table th {
+    text-align: left;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tier-table td { padding: 10px 8px; border-bottom: 1px solid #1e1e26; }
+  .tier-table tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.free { background: #7c6af720; color: var(--accent); }
+  .badge.pro  { background: #4fc3a120; color: var(--accent2); }
+  .badge.biz  { background: #f59e0b20; color: var(--warn); }
+
+  /* health bar */
+  .health {
+    margin-top: 20px;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .health-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .bar-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s, background 0.3s;
+  }
+
+  .note { font-size: 11px; color: var(--muted); margin-top: 16px; line-height: 1.6; }
+
+  /* toggle for cost detail */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .toggle-row input { accent-color: var(--accent); cursor: pointer; }
+  .toggle-row span { font-size: 12px; color: var(--muted); }
+
+  .full-width { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<h1>声轨工作台 · 定价计算器</h1>
+<p class="subtitle">拖动滑块，实时查看成本与建议定价</p>
+
+<div class="layout">
+
+  <!-- LEFT: INPUTS -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <div class="card">
+      <h2>📊 业务规模</h2>
+
+      <div class="row">
+        <div class="label">月活用户数<small>MAU</small></div>
+        <div class="val" id="v-mau">500</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="mau" min="50" max="10000" step="50" value="500">
+        <div class="slider-row"><span>50</span><span>10,000</span></div>
+      </div>
+
+      <div class="row" style="margin-top:18px">
+        <div class="label">人均月处理时长<small>分钟/人/月</small></div>
+        <div class="val" id="v-avg">30</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="avg" min="5" max="300" step="5" value="30">
+        <div class="slider-row"><span>5 min</span><span>300 min</span></div>
+      </div>
+
+      <div class="row" style="margin-top:18px">
+        <div class="label">免费额度<small>分钟/用户/月</small></div>
+        <div class="val" id="v-free">10</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="free" min="0" max="60" step="5" value="10">
+        <div class="slider-row"><span>0</span><span>60 min</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ 成本参数（每分钟，美元）</h2>
+
+      <div class="row">
+        <div class="label">ACRCloud 扫描<small>File Scanning API</small></div>
+        <div class="val" id="v-acr">$0.010</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="acr" min="0.002" max="0.05" step="0.001" value="0.010">
+        <div class="slider-row"><span>$0.002</span><span>$0.050</span></div>
+      </div>
+
+      <div class="row" style="margin-top:18px">
+        <div class="label">转码 + 存储<small>ffmpeg CPU + 临时 S3</small></div>
+        <div class="val" id="v-infra">$0.003</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="infra" min="0.001" max="0.02" step="0.001" value="0.003">
+        <div class="slider-row"><span>$0.001</span><span>$0.020</span></div>
+      </div>
+
+      <div class="row" style="margin-top:18px">
+        <div class="label">带宽 + 支付手续费<small>出口 + Stripe ~2.9%</small></div>
+        <div class="val" id="v-misc">$0.002</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="misc" min="0.001" max="0.01" step="0.0005" value="0.002">
+        <div class="slider-row"><span>$0.001</span><span>$0.010</span></div>
+      </div>
+
+      <hr class="divider">
+      <div class="row">
+        <div class="label" style="font-weight:600">单位成本合计</div>
+        <div class="val" id="v-unit" style="color:var(--text)">$0.015/min</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💰 定价策略</h2>
+
+      <div class="row">
+        <div class="label">目标毛利率<small>SaaS 常见 70–80%</small></div>
+        <div class="val" id="v-margin">75%</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="margin" min="40" max="90" step="5" value="75">
+        <div class="slider-row"><span>40%</span><span>90%</span></div>
+      </div>
+
+      <div class="row" style="margin-top:18px">
+        <div class="label">付费转化率<small>% 用户购买积分/订阅</small></div>
+        <div class="val" id="v-conv">8%</div>
+      </div>
+      <div class="slider-wrap">
+        <input type="range" id="conv" min="1" max="30" step="1" value="8">
+        <div class="slider-row"><span>1%</span><span>30%</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <div class="card">
+      <h2>📈 月度总览</h2>
+
+      <div style="display:flex;gap:24px;flex-wrap:wrap;">
+        <div>
+          <div class="big"><span class="currency">$</span><span id="r-cost">225</span></div>
+          <div class="big-label">月总成本</div>
+        </div>
+        <div>
+          <div class="big" style="color:var(--accent2)"><span class="currency">$</span><span id="r-rev">900</span></div>
+          <div class="big-label">预计月收入</div>
+        </div>
+      </div>
+
+      <div class="res-grid">
+        <div class="res-box">
+          <div class="rl">总处理量</div>
+          <div class="rv" id="r-mins">15,000 min</div>
+        </div>
+        <div class="res-box">
+          <div class="rl">付费用户量</div>
+          <div class="rv" id="r-paid">40 人</div>
+        </div>
+        <div class="res-box">
+          <div class="rl">建议售价</div>
+          <div class="rv green" id="r-price">$0.060/min</div>
+        </div>
+        <div class="res-box">
+          <div class="rl">实际毛利</div>
+          <div class="rv green" id="r-gm">75.0%</div>
+        </div>
+      </div>
+
+      <div class="health">
+        <div class="health-label">
+          <span>毛利健康度</span>
+          <span id="h-label">优秀</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill" id="h-bar" style="width:75%;background:var(--accent2)"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 建议定价分层</h2>
+
+      <table class="tier-table">
+        <tr>
+          <th>档位</th>
+          <th>额度</th>
+          <th>月费</th>
+          <th>$/min</th>
+        </tr>
+        <tr>
+          <td><span class="badge free">免费</span></td>
+          <td id="t-free-min">10 min</td>
+          <td>¥0</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="badge pro">Pro</span></td>
+          <td id="t-pro-min">100 min</td>
+          <td id="t-pro-price">¥29</td>
+          <td id="t-pro-unit">¥2.1/min</td>
+        </tr>
+        <tr>
+          <td><span class="badge biz">Business</span></td>
+          <td id="t-biz-min">500 min</td>
+          <td id="t-biz-price">¥99</td>
+          <td id="t-biz-unit">¥1.4/min</td>
+        </tr>
+      </table>
+
+      <p class="note">💡 按分钟计费，避免按视频计费（长视频会亏损）。超出套餐按量扣积分，1 积分 = 1 分钟。</p>
+    </div>
+
+    <div class="card">
+      <h2>📦 成本构成</h2>
+      <div class="breakdown" id="breakdown"></div>
+
+      <div class="note" id="breakeven-note"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+const USD2CNY = 7.25;
+
+function fmt(n, decimals=0) {
+  return n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+const sliders = {
+  mau:    document.getElementById('mau'),
+  avg:    document.getElementById('avg'),
+  free:   document.getElementById('free'),
+  acr:    document.getElementById('acr'),
+  infra:  document.getElementById('infra'),
+  misc:   document.getElementById('misc'),
+  margin: document.getElementById('margin'),
+  conv:   document.getElementById('conv'),
+};
+
+function update() {
+  const mau    = +sliders.mau.value;
+  const avg    = +sliders.avg.value;
+  const free   = +sliders.free.value;
+  const acr    = +sliders.acr.value;
+  const infra  = +sliders.infra.value;
+  const misc   = +sliders.misc.value;
+  const margin = +sliders.margin.value / 100;
+  const conv   = +sliders.conv.value / 100;
+
+  // display slider vals
+  document.getElementById('v-mau').textContent   = fmt(mau);
+  document.getElementById('v-avg').textContent   = avg + ' min';
+  document.getElementById('v-free').textContent  = free + ' min';
+  document.getElementById('v-acr').textContent   = '$' + acr.toFixed(3);
+  document.getElementById('v-infra').textContent = '$' + infra.toFixed(3);
+  document.getElementById('v-misc').textContent  = '$' + misc.toFixed(4);
+  document.getElementById('v-margin').textContent = Math.round(margin*100) + '%';
+  document.getElementById('v-conv').textContent   = Math.round(conv*100) + '%';
+
+  const unitCost = acr + infra + misc;
+  document.getElementById('v-unit').textContent = '$' + unitCost.toFixed(4) + '/min';
+
+  // totals
+  const paidUsers  = Math.round(mau * conv);
+  const freeUsers  = mau - paidUsers;
+
+  // free users are capped at the free quota; paid users use avg
+  const freeTierMins  = freeUsers * free;
+  const paidTierMins  = paidUsers * avg;
+  const totalMins     = freeTierMins + paidTierMins;
+  const totalCost     = totalMins * unitCost;   // USD
+
+  // suggested price: must cover ALL costs (incl. free-tier subsidy) at target margin
+  // price = totalCost / (paidUsers × avg × (1 - margin))
+  const suggestPriceUSD = paidUsers > 0
+    ? totalCost / (paidUsers * avg * (1 - margin))
+    : unitCost / (1 - margin);
+
+  // revenue: paid users pay for ALL their avg minutes
+  const totalRevUSD = paidUsers * avg * suggestPriceUSD;
+
+  const actualGM = totalRevUSD > 0 ? (totalRevUSD - totalCost) / totalRevUSD : 0;
+
+  document.getElementById('r-cost').textContent  = fmt(totalCost, 0);
+  document.getElementById('r-rev').textContent   = fmt(totalRevUSD, 0);
+  document.getElementById('r-mins').textContent  = fmt(totalMins) + ' min';
+  document.getElementById('r-paid').textContent  = fmt(paidUsers) + ' 人';
+  document.getElementById('r-price').textContent = '$' + suggestPriceUSD.toFixed(3) + '/min';
+
+  const gmPct = (actualGM * 100).toFixed(1);
+  const gmEl = document.getElementById('r-gm');
+  gmEl.textContent = gmPct + '%';
+  gmEl.className = 'rv ' + (actualGM >= 0.65 ? 'green' : actualGM >= 0.45 ? 'yellow' : 'red');
+
+  // health bar
+  const bar = document.getElementById('h-bar');
+  const hlabel = document.getElementById('h-label');
+  const pct = Math.max(0, Math.min(100, actualGM * 100));
+  bar.style.width = pct + '%';
+  if (pct >= 65) {
+    bar.style.background = 'var(--accent2)';
+    hlabel.textContent = '优秀';
+  } else if (pct >= 45) {
+    bar.style.background = 'var(--warn)';
+    hlabel.textContent = '一般';
+  } else {
+    bar.style.background = 'var(--red)';
+    hlabel.textContent = '危险';
+  }
+
+  // tiers (CNY)
+  const pricePerMinCNY = suggestPriceUSD * USD2CNY;
+  const proMins = 100;
+  const bizMins = 500;
+  const proPriceCNY = Math.ceil(proMins * pricePerMinCNY / 5) * 5;   // round up to nearest ¥5
+  const bizPriceCNY = Math.ceil(bizMins * pricePerMinCNY * 0.85 / 5) * 5; // 15% bulk discount
+
+  document.getElementById('t-free-min').textContent = free + ' min';
+  document.getElementById('t-pro-min').textContent  = proMins + ' min';
+  document.getElementById('t-biz-min').textContent  = bizMins + ' min';
+  document.getElementById('t-pro-price').textContent = '¥' + proPriceCNY;
+  document.getElementById('t-biz-price').textContent = '¥' + bizPriceCNY;
+  document.getElementById('t-pro-unit').textContent  = '¥' + (proPriceCNY/proMins).toFixed(1) + '/min';
+  document.getElementById('t-biz-unit').textContent  = '¥' + (bizPriceCNY/bizMins).toFixed(1) + '/min';
+
+  // breakdown
+  const items = [
+    { label: 'ACRCloud 扫描', cost: totalMins * acr, color: '#7c6af7' },
+    { label: '转码 + 存储', cost: totalMins * infra, color: '#4fc3a1' },
+    { label: '带宽 + 支付', cost: totalMins * misc, color: '#f59e0b' },
+  ];
+  const bd = document.getElementById('breakdown');
+  bd.innerHTML = '';
+  items.forEach(item => {
+    const pct2 = totalCost > 0 ? (item.cost / totalCost * 100).toFixed(0) : 0;
+    bd.innerHTML += `
+      <div class="cost-item">
+        <div class="dot" style="background:${item.color}"></div>
+        <div class="name">${item.label}</div>
+        <div style="color:var(--muted);font-size:12px;margin-right:8px">${pct2}%</div>
+        <div class="amt">$${fmt(item.cost, 2)}</div>
+      </div>`;
+  });
+
+  // breakeven note
+  const breakevenUsers = totalCost > 0 && paidUsers > 0 ?
+    Math.ceil(totalCost / (billableMinsPerPaidUser * suggestPriceUSD)) : 0;
+  document.getElementById('breakeven-note').innerHTML =
+    `盈亏平衡：需要 <strong style="color:var(--accent)">${fmt(breakevenUsers)} 个付费用户</strong>，` +
+    `按当前转化率需 <strong style="color:var(--accent)">${fmt(Math.ceil(breakevenUsers/conv))} MAU</strong>。` +
+    `<br>当前单价换算约 <strong>¥${(suggestPriceUSD * USD2CNY).toFixed(3)}/分钟</strong>（含免费用户成本摊薄，汇率 ${USD2CNY}）。`;
+}
+
+Object.values(sliders).forEach(s => s.addEventListener('input', update));
+update();
+</script>
+</body>
+</html>
