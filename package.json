@@ -1,7 +1,7 @@
 {
   "name": "soundtrace",
   "version": "1.0.0",
-  "description": "CueTrace.ai — song recognition for video and audio timelines",
+  "description": "CueTrace.org — song recognition for video and audio timelines",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

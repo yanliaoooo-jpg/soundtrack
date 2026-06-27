@@ -1,5 +1,5 @@
 /**
- * CueTrace.ai — backend service
+ * CueTrace.org — backend service
  * Node.js + Express + ACRCloud
  *
  * 启动前：
@@ -355,7 +355,7 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
 app.listen(PORT, () => {
   console.log('');
-  console.log('  CueTrace.ai');
+  console.log('  CueTrace.org');
   console.log(`  http://localhost:${PORT}`);
   console.log('');
   console.log('  ACRCloud Host  :', ACR_HOST   || 'not configured (ACR_HOST)');
