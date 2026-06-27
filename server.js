@@ -329,6 +329,16 @@ app.post('/api/scan-url', express.json(), async (req, res) => {
   }
 });
 
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? `File is too large. The current limit is ${MAX_FILE_MB} MB.`
+      : err.message;
+    return res.status(400).json({ error: message });
+  }
+  return next(err);
+});
+
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function formatTime(sec) {
   const h = Math.floor(sec / 3600);
