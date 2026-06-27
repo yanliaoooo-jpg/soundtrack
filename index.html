@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CueTrace.ai | Identify every song in any video</title>
+  <meta name="description" content="CueTrace.ai identifies songs across long-form video, live recordings, covers, DJ sets, and creator content with timestamps and export-ready cue sheets.">
+  <style>
+    :root {
+      --bg: #050607;
+      --ink: #f8faf7;
+      --soft: #b7bdb5;
+      --muted: #70776d;
+      --line: rgba(255,255,255,.12);
+      --panel: rgba(255,255,255,.055);
+      --panel-strong: rgba(255,255,255,.09);
+      --accent: #b8ff48;
+      --accent-2: #55d7ff;
+      --gold: #f2c96d;
+      --danger: #ff6f91;
+      --shadow: 0 32px 80px rgba(0,0,0,.46);
+      --max: 1180px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 8%, rgba(85,215,255,.16), transparent 34%),
+        linear-gradient(135deg, rgba(184,255,72,.13), transparent 28%),
+        var(--bg);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.85), transparent 72%);
+    }
+    a { color: inherit; text-decoration: none; }
+    button, input, textarea { font: inherit; }
+    button { border: 0; cursor: pointer; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      height: 68px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(5,6,7,.78);
+      backdrop-filter: blur(18px);
+    }
+    .nav-inner {
+      max-width: var(--max);
+      height: 100%;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+    .mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), #e8ff9b);
+      color: #0b1600;
+      display: grid;
+      place-items: center;
+      font-weight: 950;
+      box-shadow: 0 0 28px rgba(184,255,72,.28);
+    }
+    .brand small { color: var(--muted); font-weight: 700; }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      color: var(--soft);
+      font-size: 14px;
+    }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-actions { display: flex; align-items: center; gap: 10px; }
+    .btn {
+      height: 40px;
+      padding: 0 16px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      color: #0c1603;
+      background: var(--accent);
+      box-shadow: 0 12px 34px rgba(184,255,72,.22);
+    }
+    .btn-primary:hover { background: #c9ff69; }
+    .btn-secondary {
+      color: var(--ink);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.24); }
+    .btn-large { height: 54px; padding: 0 24px; font-size: 15px; }
+
+    .hero {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 86px 28px 56px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(420px, .86fr);
+      gap: 56px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 22px;
+      padding: 7px 12px;
+      border: 1px solid rgba(184,255,72,.32);
+      border-radius: 999px;
+      background: rgba(184,255,72,.09);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 20px var(--accent);
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(46px, 6vw, 78px);
+      line-height: .98;
+      letter-spacing: 0;
+      max-width: 720px;
+    }
+    h1 span { color: var(--accent); }
+    .hero-copy {
+      margin: 24px 0 34px;
+      max-width: 610px;
+      color: var(--soft);
+      font-size: 18px;
+      line-height: 1.72;
+    }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 18px; }
+    .trust {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .trust span { display: inline-flex; align-items: center; gap: 7px; }
+    .trust span::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+
+    .console {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.035));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .console::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(130deg, rgba(255,255,255,.17), transparent 28%, transparent 70%, rgba(184,255,72,.12));
+    }
+    .console-head {
+      height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      padding: 0 18px;
+      color: var(--soft);
+      font-size: 13px;
+      background: rgba(0,0,0,.18);
+    }
+    .dots { display: flex; gap: 7px; }
+    .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.22); display: block; }
+    .console-body { padding: 20px; position: relative; }
+    .file-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      color: var(--soft);
+      font-size: 13px;
+    }
+    .file-meta strong { color: var(--ink); }
+    .wave {
+      height: 92px;
+      border: 1px solid rgba(184,255,72,.2);
+      border-radius: 10px;
+      background: linear-gradient(90deg, rgba(184,255,72,.08), rgba(85,215,255,.09), rgba(184,255,72,.07));
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 12px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .wave i {
+      flex: 1;
+      min-width: 3px;
+      border-radius: 999px;
+      background: linear-gradient(to top, var(--accent), var(--accent-2));
+      opacity: .72;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { height: 12%; opacity: .42; }
+      50% { height: var(--h); opacity: .95; }
+    }
+    .track-list { display: grid; gap: 8px; }
+    .track {
+      display: grid;
+      grid-template-columns: 78px 1fr auto;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.22);
+    }
+    .time { color: var(--accent); font-weight: 850; font-variant-numeric: tabular-nums; font-size: 13px; }
+    .track strong { display: block; font-size: 14px; }
+    .track small { display: block; color: var(--muted); margin-top: 3px; }
+    .score {
+      border: 1px solid rgba(184,255,72,.3);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 850;
+      background: rgba(184,255,72,.08);
+    }
+
+    section {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 84px 28px;
+    }
+    .section-kicker {
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-align: center;
+      margin-bottom: 14px;
+    }
+    h2 {
+      margin: 0 auto;
+      max-width: 760px;
+      text-align: center;
+      font-size: clamp(34px, 4vw, 52px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    .section-copy {
+      margin: 16px auto 0;
+      max-width: 660px;
+      text-align: center;
+      color: var(--soft);
+      line-height: 1.7;
+      font-size: 17px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 42px;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 26px;
+      background: var(--panel);
+    }
+    .card:hover { background: var(--panel-strong); border-color: rgba(255,255,255,.2); }
+    .icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 9px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px;
+      color: #081301;
+      background: var(--accent);
+      font-weight: 950;
+    }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+    .card p { margin: 0; color: var(--soft); line-height: 1.7; font-size: 14px; }
+
+    .steps {
+      margin-top: 46px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      background: rgba(0,0,0,.16);
+    }
+    .step {
+      padding: 30px;
+      border-right: 1px solid var(--line);
+    }
+    .step:last-child { border-right: 0; }
+    .num {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 950;
+      margin-bottom: 18px;
+    }
+    .step h3 { margin: 0 0 10px; font-size: 20px; }
+    .step p { margin: 0; color: var(--soft); line-height: 1.7; font-size: 14px; }
+
+    .plans {
+      margin-top: 46px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+    .plan {
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 30px;
+      background: var(--panel);
+    }
+    .plan.featured {
+      border-color: rgba(184,255,72,.7);
+      background: linear-gradient(180deg, rgba(184,255,72,.1), rgba(255,255,255,.045));
+      box-shadow: 0 0 44px rgba(184,255,72,.15);
+    }
+    .badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #0b1600;
+      background: var(--accent);
+      border-radius: 999px;
+      padding: 5px 13px;
+      font-size: 12px;
+      font-weight: 950;
+      white-space: nowrap;
+    }
+    .plan-name { color: var(--soft); font-weight: 800; margin-bottom: 14px; }
+    .price { font-size: 44px; font-weight: 950; margin-bottom: 4px; }
+    .price small { color: var(--soft); font-size: 15px; font-weight: 650; }
+    .plan-desc { color: var(--muted); font-size: 13px; min-height: 36px; margin-bottom: 24px; }
+    .features { display: grid; gap: 12px; margin: 0 0 26px; padding: 0; list-style: none; }
+    .features li { color: var(--soft); font-size: 14px; line-height: 1.35; display: flex; gap: 9px; }
+    .features li::before { content: "✓"; color: var(--accent); font-weight: 950; }
+    .plan .btn { width: 100%; }
+
+    .workbench {
+      margin-top: 48px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255,255,255,.045);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .workbench-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      color: var(--soft);
+      font-size: 13px;
+    }
+    .workbench-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      min-height: 420px;
+    }
+    .upload {
+      margin: 18px;
+      border: 1.5px dashed rgba(255,255,255,.22);
+      border-radius: 12px;
+      min-height: 132px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--soft);
+      background: rgba(0,0,0,.18);
+      cursor: pointer;
+    }
+    .upload:hover { border-color: rgba(184,255,72,.7); background: rgba(184,255,72,.045); }
+    .upload strong { color: var(--ink); display: block; margin-bottom: 6px; }
+    .timeline {
+      margin: 0 18px 18px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(0,0,0,.2);
+    }
+    .timeline-head {
+      height: 44px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+      color: var(--soft);
+      font-size: 13px;
+    }
+    .timeline-bars {
+      height: 86px;
+      position: relative;
+      background: linear-gradient(90deg, rgba(255,255,255,.035), rgba(255,255,255,.01));
+    }
+    .segment {
+      position: absolute;
+      top: 20px;
+      height: 46px;
+      border-radius: 7px;
+      color: #071100;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 15px 8px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .side {
+      border-left: 1px solid var(--line);
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+      background: rgba(0,0,0,.13);
+    }
+    .status {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px;
+      background: rgba(255,255,255,.045);
+    }
+    .status h3 { margin: 0 0 14px; font-size: 15px; }
+    .meter {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .meter span { display: block; height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: inherit; transition: width .25s ease; }
+    .status p { color: var(--soft); margin: 0; line-height: 1.6; font-size: 13px; }
+    .results {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255,255,255,.045);
+    }
+    .results-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      color: var(--soft);
+      font-size: 13px;
+    }
+    .results-list {
+      display: grid;
+      max-height: 240px;
+      overflow: auto;
+    }
+    .result-row {
+      display: grid;
+      grid-template-columns: 70px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      font-size: 13px;
+    }
+    .result-row:last-child { border-bottom: 0; }
+    .result-row strong { display: block; color: var(--ink); }
+    .result-row small { display: block; color: var(--muted); margin-top: 2px; }
+    .result-time { color: var(--accent); font-weight: 850; font-variant-numeric: tabular-nums; }
+    .export-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field {
+      width: 100%;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: rgba(0,0,0,.18);
+      color: var(--ink);
+      padding: 0 12px;
+      outline: 0;
+    }
+    .field:focus { border-color: rgba(184,255,72,.65); }
+
+    .faq {
+      margin-top: 42px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    details { border-bottom: 1px solid var(--line); background: rgba(255,255,255,.045); }
+    details:last-child { border-bottom: 0; }
+    summary {
+      padding: 22px 24px;
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
+    details[open] summary::after { transform: rotate(45deg); }
+    details p { margin: 0; padding: 0 24px 22px; color: var(--soft); line-height: 1.75; font-size: 14px; }
+
+    .final-cta {
+      max-width: none;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      text-align: center;
+      padding: 96px 28px;
+      background: linear-gradient(180deg, transparent, rgba(184,255,72,.06));
+    }
+    .final-cta h2 { max-width: 860px; }
+    .final-cta p { color: var(--soft); font-size: 17px; margin: 18px auto 30px; max-width: 620px; line-height: 1.7; }
+    footer {
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 30px 28px;
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: center;
+    }
+    footer .brand { color: var(--ink); }
+    footer nav { display: flex; gap: 20px; }
+    footer a:hover { color: var(--ink); }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; padding-top: 64px; }
+      .console { max-width: 620px; }
+      .grid-3, .steps, .plans, .workbench-grid { grid-template-columns: 1fr; }
+      .step { border-right: 0; border-bottom: 1px solid var(--line); }
+      .step:last-child { border-bottom: 0; }
+      .side { border-left: 0; border-top: 1px solid var(--line); }
+    }
+    @media (max-width: 620px) {
+      .nav-inner { padding: 0 18px; }
+      .nav-actions .btn-secondary { display: none; }
+      .hero, section { padding-left: 18px; padding-right: 18px; }
+      .hero-actions .btn { width: 100%; }
+      .track { grid-template-columns: 1fr auto; }
+      .time { grid-column: 1 / -1; }
+      footer { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#">
+        <span class="mark">C</span>
+        <span>CueTrace.ai <small>Pro</small></span>
+      </a>
+      <div class="nav-links">
+        <a href="#platform">Platform</a>
+        <a href="#workflow">Workflow</a>
+        <a href="#use-cases">Use cases</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="nav-actions">
+        <a class="btn btn-secondary" href="#workspace">View workspace</a>
+        <a class="btn btn-primary" href="#pricing">Start free</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Built for covers, live sets, humming, and long-form video</div>
+        <h1>Identify every song in any video. <span>With timestamps.</span></h1>
+        <p class="hero-copy">Upload a recording, livestream, DJ set, podcast, concert clip, or creator video. CueTrace.ai scans the full timeline, recognizes the music, and returns a clean cue sheet ready for credits, chapters, rights review, and edits.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-large" href="#workspace">Analyze a video</a>
+          <a class="btn btn-secondary btn-large" href="#workflow">See how it works</a>
+        </div>
+        <div class="trust">
+          <span>60 free minutes</span>
+          <span>No credit card required</span>
+          <span>Export CSV, chapters, and edit cues</span>
+        </div>
+      </div>
+
+      <div class="console" aria-label="CueTrace analysis preview">
+        <div class="console-head">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <strong>Live Set Analysis</strong>
+          <span>94% complete</span>
+        </div>
+        <div class="console-body">
+          <div class="file-meta">
+            <span><strong>studio-session-final.mov</strong></span>
+            <span>02:14:08</span>
+          </div>
+          <div class="wave" id="wave"></div>
+          <div class="track-list">
+            <div class="track"><span class="time">00:46:47</span><span><strong>Sweet Disposition</strong><small>The Temper Trap</small></span><span class="score">97%</span></div>
+            <div class="track"><span class="time">00:59:18</span><span><strong>Bad Romance</strong><small>Lady Gaga</small></span><span class="score">96%</span></div>
+            <div class="track"><span class="time">01:05:30</span><span><strong>Baby, Acoustic Cover</strong><small>Justin Bieber</small></span><span class="score">88%</span></div>
+            <div class="track"><span class="time">01:18:04</span><span><strong>Midnight City</strong><small>M83</small></span><span class="score">94%</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="platform">
+      <div class="section-kicker">Why CueTrace.ai</div>
+      <h2>Stop rewinding footage to guess what song is playing.</h2>
+      <p class="section-copy">Manual music identification breaks down on long recordings, live performances, remixes, noisy rooms, and creator workflows. CueTrace.ai turns that messy timeline into structured music metadata.</p>
+      <div class="grid-3">
+        <article class="card">
+          <div class="icon">01</div>
+          <h3>Know the track before you publish</h3>
+          <p>Find unknown background music before a video goes live, then credit it, replace it, or flag it for rights review.</p>
+        </article>
+        <article class="card">
+          <div class="icon">02</div>
+          <h3>Process hours in minutes</h3>
+          <p>Concerts, livestreams, KTV sessions, radio shows, and DJ sets become timestamped song lists without manual listening.</p>
+        </article>
+        <article class="card">
+          <div class="icon">03</div>
+          <h3>Works beyond studio masters</h3>
+          <p>Cover recognition and melody matching help identify live versions, acoustic takes, hummed melodies, and rearrangements.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="workflow">
+      <div class="section-kicker">Workflow</div>
+      <h2>From raw footage to export-ready cue sheet in three steps.</h2>
+      <div class="steps">
+        <article class="step">
+          <div class="num">STEP 01</div>
+          <h3>Upload or paste a link</h3>
+          <p>Drop in video or audio, or scan a YouTube, TikTok, Instagram, Bilibili, or Douyin URL from the workspace.</p>
+        </article>
+        <article class="step">
+          <div class="num">STEP 02</div>
+          <h3>Scan the full timeline</h3>
+          <p>The engine samples the recording, matches musical fingerprints and melodies, then validates candidates across segments.</p>
+        </article>
+        <article class="step">
+          <div class="num">STEP 03</div>
+          <h3>Export clean results</h3>
+          <p>Download YouTube chapters, CSV, Markdown, rights-review cue sheets, or ffmpeg commands for song-by-song clips.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="use-cases">
+      <div class="section-kicker">Use Cases</div>
+      <h2>Built for teams that publish, clear, archive, and remix video.</h2>
+      <div class="grid-3">
+        <article class="card"><div class="icon">CR</div><h3>Creators and editors</h3><p>Identify every BGM placement, build credits, and avoid publishing with unknown copyrighted music.</p></article>
+        <article class="card"><div class="icon">DJ</div><h3>DJ sets and live audio</h3><p>Recover tracklists from full sets, radio mixes, venue recordings, remixes, and live versions.</p></article>
+        <article class="card"><div class="icon">MC</div><h3>MCNs and studios</h3><p>Batch long-form videos, create song timelines, and hand editors structured data instead of rough notes.</p></article>
+        <article class="card"><div class="icon">PD</div><h3>Podcasts and radio</h3><p>Create show notes with precise song timestamps and a clear music log for every episode.</p></article>
+        <article class="card"><div class="icon">EV</div><h3>Concerts and events</h3><p>Turn live event footage into a searchable tracklist, even when the performance differs from the original release.</p></article>
+        <article class="card"><div class="icon">IP</div><h3>Rights review</h3><p>Surface likely protected tracks, ISRC metadata, and confidence scores before the asset reaches distribution.</p></article>
+      </div>
+    </section>
+
+    <section id="pricing">
+      <div class="section-kicker">Pricing</div>
+      <h2>Premium-grade music intelligence, billed by usage.</h2>
+      <p class="section-copy">Start with free minutes, then scale by team size and monthly video volume.</p>
+      <div class="plans">
+        <article class="plan">
+          <div class="plan-name">Free</div>
+          <div class="price">$0</div>
+          <div class="plan-desc">For first scans and light personal use.</div>
+          <ul class="features">
+            <li>60 minutes included each month</li>
+            <li>Song title, artist, and timestamp</li>
+            <li>In-browser review workspace</li>
+            <li>Single file up to 30 minutes</li>
+          </ul>
+          <a class="btn btn-secondary" href="#workspace">Start free</a>
+        </article>
+        <article class="plan featured">
+          <div class="badge">Most selected</div>
+          <div class="plan-name">Creator</div>
+          <div class="price">$19 <small>/ month</small></div>
+          <div class="plan-desc">For creators publishing weekly long-form video.</div>
+          <ul class="features">
+            <li>600 minutes included each month</li>
+            <li>Cover, live, and humming recognition</li>
+            <li>CSV, playlist, and chapter export</li>
+            <li>Direct link scanning</li>
+            <li>Overage at $0.04 per minute</li>
+          </ul>
+          <a class="btn btn-primary" href="#workspace">Try Creator</a>
+        </article>
+        <article class="plan">
+          <div class="plan-name">Studio</div>
+          <div class="price">$79 <small>/ month</small></div>
+          <div class="plan-desc">For teams, MCNs, archives, and batch operations.</div>
+          <ul class="features">
+            <li>3,000 minutes included each month</li>
+            <li>Batch queue and API access</li>
+            <li>Clip export commands</li>
+            <li>Priority processing</li>
+            <li>Overage at $0.025 per minute</li>
+          </ul>
+          <a class="btn btn-secondary" href="mailto:hello@cuetrace.ai">Contact sales</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="workspace">
+      <div class="section-kicker">Workspace Preview</div>
+      <h2>A professional review console for every detected song.</h2>
+      <p class="section-copy">This English version keeps the original product idea, but presents it as a sharper SaaS workflow for global creators and studios.</p>
+      <div class="workbench">
+        <div class="workbench-top">
+          <strong>CueTrace.ai Workspace</strong>
+          <span>Review, search, export</span>
+        </div>
+        <div class="workbench-grid">
+          <div>
+	            <label class="upload" id="uploadZone">
+	              <input id="fileInput" type="file" accept="audio/*,video/*" hidden>
+	              <span><strong>Choose a video or audio file</strong>MP4, MOV, MP3, M4A, WAV. Recognition starts automatically.</span>
+	            </label>
+	            <div class="timeline">
+	              <div class="timeline-head"><strong>Timeline</strong><span id="timelineTotal">Waiting for source</span></div>
+	              <div class="timeline-bars" id="timelineBars">
+	                <span class="segment" style="left:8%;width:15%;background:var(--accent)">Sweet Disposition</span>
+	                <span class="segment" style="left:34%;width:12%;background:var(--accent-2)">Bad Romance</span>
+	                <span class="segment" style="left:53%;width:16%;background:var(--gold)">Baby Cover</span>
+                <span class="segment" style="left:76%;width:14%;background:var(--danger)">Midnight City</span>
+              </div>
+            </div>
+          </div>
+	          <aside class="side">
+	            <div class="status">
+	              <h3>Recognition Status</h3>
+	              <div class="meter"><span id="progressBar"></span></div>
+	              <p id="statusText">Choose a file or paste a video URL to begin recognition.</p>
+	            </div>
+	            <input class="field" id="urlInput" placeholder="Paste a video URL">
+	            <button class="btn btn-primary" id="urlScanButton" type="button">Start recognition</button>
+	            <div class="results">
+	              <div class="results-head"><strong>Detected tracks</strong><span id="resultCount">0</span></div>
+	              <div class="results-list" id="resultsList">
+	                <div class="result-row"><span class="result-time">--:--</span><span><strong>No results yet</strong><small>Detected songs will appear here.</small></span><span class="score">--</span></div>
+	              </div>
+	            </div>
+	            <div class="export-row">
+	              <button class="btn btn-secondary" id="exportCsvButton" type="button">Export CSV</button>
+	              <button class="btn btn-secondary" id="exportChaptersButton" type="button">Export chapters</button>
+	            </div>
+	          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="section-kicker">FAQ</div>
+      <h2>Questions teams ask before putting CueTrace.ai into their workflow.</h2>
+      <div class="faq">
+        <details open>
+          <summary>Can it identify covers, live versions, and self-recorded singing?</summary>
+          <p>Yes. CueTrace.ai is positioned around cover and melody-aware recognition, so it is not limited to matching exact studio recordings. Accuracy can still drop on very noisy audio, very short clips, or obscure songs.</p>
+        </details>
+        <details>
+          <summary>How long can a video be?</summary>
+          <p>The free plan is designed for shorter files. Paid plans support long-form recordings such as concerts, livestreams, podcasts, DJ sets, and multi-hour source footage.</p>
+        </details>
+        <details>
+          <summary>Does CueTrace.ai store my video?</summary>
+          <p>The page can present privacy-first processing: local files are handled for preview in the browser, and server scans should retain only the minimum fingerprint data needed for recognition.</p>
+        </details>
+        <details>
+          <summary>Can I scan links directly?</summary>
+          <p>Yes. The Creator and Studio positioning includes direct URL scanning for major video platforms, so users do not need to download files manually before analysis.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="final-cta">
+      <h2>Give every video a clean, searchable music timeline.</h2>
+      <p>Move from “what song is this?” to a polished cue sheet your team can publish, edit, or review with confidence.</p>
+      <a class="btn btn-primary btn-large" href="#pricing">Launch CueTrace.ai</a>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand" href="#"><span class="mark">C</span><span>CueTrace.ai</span></a>
+    <span>Identify every song in any video.</span>
+    <nav>
+      <a href="#platform">Platform</a>
+      <a href="#pricing">Pricing</a>
+      <a href="mailto:hello@cuetrace.ai">Contact</a>
+    </nav>
+  </footer>
+
+	  <script>
+	    const wave = document.getElementById("wave");
+	    const heights = [24, 58, 36, 72, 44, 88, 32, 64, 80, 28, 54, 92, 42, 76, 34, 68, 52, 86, 30, 62, 74, 38, 96, 48, 82, 26, 56, 70, 40, 90, 35, 78];
+	    heights.forEach((height, index) => {
+	      const bar = document.createElement("i");
+	      bar.style.setProperty("--h", height + "%");
+	      bar.style.animationDelay = (index * 0.045) + "s";
+	      wave.appendChild(bar);
+	    });
+
+	    const state = { songs: [], duration: 0 };
+	    const progressBar = document.getElementById("progressBar");
+	    const statusText = document.getElementById("statusText");
+	    const resultCount = document.getElementById("resultCount");
+	    const resultsList = document.getElementById("resultsList");
+	    const timelineBars = document.getElementById("timelineBars");
+	    const timelineTotal = document.getElementById("timelineTotal");
+	    const colors = ["var(--accent)", "var(--accent-2)", "var(--gold)", "var(--danger)"];
+
+	    function fmt(seconds) {
+	      const safe = Math.max(0, Number(seconds) || 0);
+	      const h = Math.floor(safe / 3600);
+	      const m = Math.floor((safe % 3600) / 60);
+	      const s = Math.floor(safe % 60);
+	      return h > 0
+	        ? `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+	        : `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+	    }
+
+	    function setStatus(message, pct) {
+	      statusText.textContent = message;
+	      if (Number.isFinite(pct)) progressBar.style.width = Math.max(0, Math.min(100, pct)) + "%";
+	    }
+
+	    function renderResults() {
+	      const duration = state.duration || Math.max(180, ...state.songs.map(song => song.end || 0));
+	      timelineTotal.textContent = state.duration ? `${fmt(state.duration)} total` : "Timeline preview";
+	      resultCount.textContent = String(state.songs.length);
+	      timelineBars.innerHTML = "";
+
+	      if (!state.songs.length) {
+	        resultsList.innerHTML = '<div class="result-row"><span class="result-time">--:--</span><span><strong>No results yet</strong><small>Detected songs will appear here.</small></span><span class="score">--</span></div>';
+	        ["Sweet Disposition", "Bad Romance", "Baby Cover", "Midnight City"].forEach((title, index) => {
+	          const segment = document.createElement("span");
+	          segment.className = "segment";
+	          segment.style.left = [8, 34, 53, 76][index] + "%";
+	          segment.style.width = [15, 12, 16, 14][index] + "%";
+	          segment.style.background = colors[index % colors.length];
+	          segment.textContent = title;
+	          timelineBars.appendChild(segment);
+	        });
+	        return;
+	      }
+
+	      resultsList.innerHTML = state.songs.map(song => `
+	        <div class="result-row">
+	          <span class="result-time">${fmt(song.start)}</span>
+	          <span><strong>${song.title}</strong><small>${song.artist}</small></span>
+	          <span class="score">${Math.round(song.score || 0)}%</span>
+	        </div>
+	      `).join("");
+
+	      state.songs.forEach((song, index) => {
+	        const segment = document.createElement("span");
+	        segment.className = "segment";
+	        segment.style.left = Math.max(0, (song.start / duration) * 100) + "%";
+	        segment.style.width = Math.max(3, ((song.end - song.start) / duration) * 100) + "%";
+	        segment.style.background = colors[index % colors.length];
+	        segment.textContent = song.title;
+	        timelineBars.appendChild(segment);
+	      });
+	    }
+
+	    async function readStream(response) {
+	      if (!response.ok) {
+	        const err = await response.json().catch(() => ({ error: response.statusText }));
+	        throw new Error(err.error || response.statusText);
+	      }
+
+	      const reader = response.body.getReader();
+	      const decoder = new TextDecoder();
+	      let buffer = "";
+	      while (true) {
+	        const { done, value } = await reader.read();
+	        if (done) break;
+	        buffer += decoder.decode(value, { stream: true });
+	        const lines = buffer.split("\n");
+	        buffer = lines.pop();
+	        for (const line of lines) {
+	          if (!line.startsWith("data: ")) continue;
+	          const event = JSON.parse(line.slice(6));
+	          if (event.type === "meta") {
+	            state.duration = event.duration || state.duration;
+	            setStatus(event.msg || "Preparing scan...", 3);
+	          }
+	          if (event.type === "status") setStatus(event.msg, 5);
+	          if (event.type === "progress") setStatus(event.msg, event.pct);
+	          if (event.type === "song") {
+	            state.songs.push(event);
+	            state.songs.sort((a, b) => a.start - b.start);
+	            renderResults();
+	          }
+	          if (event.type === "warn") setStatus(event.msg, parseFloat(progressBar.style.width) || 0);
+	          if (event.type === "error") throw new Error(event.msg);
+	          if (event.type === "done") {
+	            state.duration = event.duration || state.duration;
+	            setStatus(`Recognition complete. ${event.found || state.songs.length} tracks detected.`, 100);
+	          }
+	        }
+	      }
+	      renderResults();
+	    }
+
+	    async function scanFile(file) {
+	      state.songs = [];
+	      state.duration = 0;
+	      renderResults();
+	      setStatus(`Uploading ${file.name}...`, 2);
+	      const form = new FormData();
+	      form.append("file", file);
+	      await readStream(await fetch("/api/scan", { method: "POST", body: form }));
+	    }
+
+	    async function scanUrl() {
+	      const url = document.getElementById("urlInput").value.trim();
+	      if (!url) {
+	        setStatus("Paste a video URL first.", 0);
+	        return;
+	      }
+	      state.songs = [];
+	      state.duration = 0;
+	      renderResults();
+	      setStatus("Connecting to URL scanner...", 2);
+	      await readStream(await fetch("/api/scan-url", {
+	        method: "POST",
+	        headers: { "Content-Type": "application/json" },
+	        body: JSON.stringify({ url }),
+	      }));
+	    }
+
+	    function download(filename, content) {
+	      const a = document.createElement("a");
+	      a.href = URL.createObjectURL(new Blob([content], { type: "text/plain;charset=utf-8" }));
+	      a.download = filename;
+	      a.click();
+	      URL.revokeObjectURL(a.href);
+	    }
+
+	    function exportCsv() {
+	      if (!state.songs.length) return setStatus("Run recognition before exporting.", parseFloat(progressBar.style.width) || 0);
+	      const rows = [["start", "end", "title", "artist", "score", "isrc"]];
+	      state.songs.forEach(song => rows.push([fmt(song.start), fmt(song.end), song.title, song.artist, song.score || "", song.isrc || ""]));
+	      download("cuetrace-results.csv", rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\n"));
+	    }
+
+	    function exportChapters() {
+	      if (!state.songs.length) return setStatus("Run recognition before exporting.", parseFloat(progressBar.style.width) || 0);
+	      download("cuetrace-chapters.txt", state.songs.map(song => `${fmt(song.start)} ${song.title} - ${song.artist}`).join("\n"));
+	    }
+
+	    document.getElementById("fileInput").addEventListener("change", event => {
+	      const file = event.target.files[0];
+	      if (!file) return;
+	      scanFile(file).catch(error => setStatus(error.message, parseFloat(progressBar.style.width) || 0));
+	    });
+	    document.getElementById("urlScanButton").addEventListener("click", () => {
+	      scanUrl().catch(error => setStatus(error.message, parseFloat(progressBar.style.width) || 0));
+	    });
+	    document.getElementById("exportCsvButton").addEventListener("click", exportCsv);
+	    document.getElementById("exportChaptersButton").addEventListener("click", exportChapters);
+	    renderResults();
+	  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 /**
- * 声轨 SoundTrace — 后端服务
+ * CueTrace.ai — backend service
  * Node.js + Express + ACRCloud
  *
  * 启动前：
@@ -43,7 +43,7 @@ const upload = multer({
 // Serve the main HTML at root (must be before express.static)
 app.get('/', (req, res) => {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  fs.createReadStream(path.join(__dirname, '声轨 SoundTrace.html')).pipe(res);
+  fs.createReadStream(path.join(__dirname, 'index.html')).pipe(res);
 });
 
 // Serve other static assets (CSS, JS, etc.)
@@ -100,14 +100,14 @@ function extractPCM(filePath) {
       const buf = Buffer.concat(chunks);
       if (buf.length === 0) {
         const errMsg = Buffer.concat(errLines).toString().slice(-500);
-        reject(new Error(`ffmpeg 解码失败 (exit ${code}): ${errMsg}`));
+        reject(new Error(`ffmpeg decode failed (exit ${code}): ${errMsg}`));
       } else {
         resolve(buf);
       }
     });
 
     proc.on('error', err => {
-      reject(new Error('ffmpeg 未安装或无法运行: ' + err.message));
+      reject(new Error('ffmpeg is not installed or could not run: ' + err.message));
     });
   });
 }
@@ -172,7 +172,7 @@ function extractPCMFromURL(url) {
       if (code !== 0) {
         ffmpeg.kill();
         const msg = Buffer.concat(ytErr).toString().slice(-400);
-        reject(new Error(`yt-dlp 失败 (${code}): ${msg}`));
+        reject(new Error(`yt-dlp failed (${code}): ${msg}`));
       }
     });
 
@@ -184,14 +184,14 @@ function extractPCMFromURL(url) {
       const buf = Buffer.concat(chunks);
       if (buf.length === 0) {
         const msg = Buffer.concat(ffErr).toString().slice(-400);
-        reject(new Error(`ffmpeg 解码失败 (${code}): ${msg}`));
+        reject(new Error(`ffmpeg decode failed (${code}): ${msg}`));
       } else {
         resolve(buf);
       }
     });
 
-    ytdlp.on('error', e => reject(new Error('yt-dlp 未安装: ' + e.message)));
-    ffmpeg.on('error', e => reject(new Error('ffmpeg 未安装: ' + e.message)));
+    ytdlp.on('error', e => reject(new Error('yt-dlp is not installed: ' + e.message)));
+    ffmpeg.on('error', e => reject(new Error('ffmpeg is not installed: ' + e.message)));
   });
 }
 
@@ -207,7 +207,7 @@ async function runScan(pcm, send) {
   send('meta', {
     duration: totalSeconds,
     steps:    totalSteps,
-    msg:      `时长 ${Math.round(totalSeconds)}s，分 ${totalSteps} 段识别`,
+    msg:      `Duration ${Math.round(totalSeconds)}s, scanning ${totalSteps} segments`,
   });
 
   const seen = new Map();
@@ -227,7 +227,7 @@ async function runScan(pcm, send) {
       total: totalSteps,
       pct,
       t:     tSec,
-      msg:   `第 ${i + 1}/${totalSteps} 段（${formatTime(tSec)}）`,
+      msg:   `Segment ${i + 1}/${totalSteps} (${formatTime(tSec)})`,
     });
 
     try {
@@ -241,8 +241,8 @@ async function runScan(pcm, send) {
           send('song', {
             start:        parseFloat(tSec.toFixed(1)),
             end:          parseFloat(Math.min(totalSeconds, tSec + SCAN_STEP).toFixed(1)),
-            title:        m.title        || '未知歌曲',
-            artist:       (m.artists || []).map(a => a.name).join(', ') || '未知',
+            title:        m.title        || 'Unknown track',
+            artist:       (m.artists || []).map(a => a.name).join(', ') || 'Unknown artist',
             album:        m.album?.name  || '',
             label:        m.label        || '',
             release_date: m.release_date || '',
@@ -254,9 +254,9 @@ async function runScan(pcm, send) {
       }
     } catch (e) {
       errors++;
-      send('warn', { msg: `第 ${i + 1} 段识别失败：${e.message}` });
+      send('warn', { msg: `Segment ${i + 1} failed: ${e.message}` });
       if (errors >= MAX_ERRORS) {
-        send('error', { msg: '连续失败次数过多，终止扫描。请检查凭证或网络。' });
+        send('error', { msg: 'Too many consecutive failures. Please check credentials or network connectivity.' });
         return { found, totalSeconds };
       }
     }
@@ -280,22 +280,22 @@ function startSSE(res) {
 
 function checkACR(res) {
   if (!ACR_HOST || !ACR_KEY || !ACR_SECRET) {
-    res.status(500).json({ error: '服务器未配置 ACRCloud 凭证，请检查 .env 文件' });
+    res.status(500).json({ error: 'ACRCloud credentials are not configured. Please check the .env file.' });
     return false;
   }
   return true;
 }
 
-// ── /api/scan  — 本地文件上传 ─────────────────────────────────────────────────
+// ── /api/scan  — local file upload ────────────────────────────────────────────
 app.post('/api/scan', upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: '未收到文件' });
+  if (!req.file) return res.status(400).json({ error: 'No file received' });
   if (!checkACR(res)) { fs.unlink(req.file.path, () => {}); return; }
 
   const send     = startSSE(res);
   const filePath = req.file.path;
 
   try {
-    send('status', { msg: '正在解码音频（ffmpeg）…' });
+    send('status', { msg: 'Decoding audio with ffmpeg...' });
     const pcm = await extractPCM(filePath);
     const { found, totalSeconds } = await runScan(pcm, send);
     send('done', { found, duration: totalSeconds });
@@ -308,16 +308,16 @@ app.post('/api/scan', upload.single('file'), async (req, res) => {
   }
 });
 
-// ── /api/scan-url  — 链接识别（YouTube / 抖音 / B站 等）────────────────────────
+// ── /api/scan-url  — URL scanning ─────────────────────────────────────────────
 app.post('/api/scan-url', express.json(), async (req, res) => {
   const url = (req.body?.url || '').trim();
-  if (!url) return res.status(400).json({ error: '未提供链接' });
+  if (!url) return res.status(400).json({ error: 'No URL provided' });
   if (!checkACR(res)) return;
 
   const send = startSSE(res);
 
   try {
-    send('status', { msg: `正在下载音频：${url.slice(0, 60)}…` });
+    send('status', { msg: `Downloading audio: ${url.slice(0, 60)}...` });
     const pcm = await extractPCMFromURL(url);
     const { found, totalSeconds } = await runScan(pcm, send);
     send('done', { found, duration: totalSeconds });
@@ -345,11 +345,11 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir);
 
 app.listen(PORT, () => {
   console.log('');
-  console.log('  声轨 SoundTrace');
+  console.log('  CueTrace.ai');
   console.log(`  http://localhost:${PORT}`);
   console.log('');
-  console.log('  ACRCloud Host  :', ACR_HOST   || '⚠  未配置 (ACR_HOST)');
-  console.log('  ACRCloud Key   :', ACR_KEY    ? '✓ 已配置' : '⚠  未配置 (ACR_KEY)');
-  console.log('  ACRCloud Secret:', ACR_SECRET ? '✓ 已配置' : '⚠  未配置 (ACR_SECRET)');
+  console.log('  ACRCloud Host  :', ACR_HOST   || 'not configured (ACR_HOST)');
+  console.log('  ACRCloud Key   :', ACR_KEY    ? 'configured' : 'not configured (ACR_KEY)');
+  console.log('  ACRCloud Secret:', ACR_SECRET ? 'configured' : 'not configured (ACR_SECRET)');
   console.log('');
 });
